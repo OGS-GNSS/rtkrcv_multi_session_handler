@@ -1,0 +1,20 @@
+receivers:
+  2409-001:
+    coords:
+      alt: 105.2
+      lat: 46.03733916666667
+      lon: 13.253118166666665
+    ip: 10.158.0.163
+    port: 2222
+    role: master
+    serial: 2409-001
+  2409-002:
+    ip: 10.55.66.116
+    port: 2222
+    role: rover
+    serial: 2409-002
+  2409-003:
+    ip: 10.158.0.189
+    port: 2222
+    role: rover
+    serial: 2409-003
