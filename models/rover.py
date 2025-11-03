@@ -38,29 +38,50 @@ class Rover(Ricevitore):
         
         print(f"File di configurazione creato: {config_file}")
         
-        # Definisci file soluzione
+        # Definisci file soluzione e file temporanei
         solution_file = Path(tempfile.gettempdir()) / f"solution_{self.serial_number}.pos"
+        stdin_file = Path(tempfile.gettempdir()) / f"rtkrcv_stdin_{self.serial_number}.txt"
+        stdout_file = Path(tempfile.gettempdir()) / f"rtkrcv_stdout_{self.serial_number}.log"
+        stderr_file = Path(tempfile.gettempdir()) / f"rtkrcv_stderr_{self.serial_number}.log"
         print(f"File soluzione atteso: {solution_file}")
 
         process = None
+        stdin_fd = None
+        stdout_fd = None
+        stderr_fd = None
         try:
             # Avvia RTKRCV
             print(f"Avvio RTKRCV per Rover {self.serial_number}...")
             print(f"Comando: {rtklib_path} -o {config_file}")
-            
+
+            # Scrivi comandi nel file stdin
+            with open(stdin_file, 'w') as f:
+                f.write('start\n')
+
+            # Apri i file per redirection
+            stdin_fd = open(stdin_file, 'r')
+            stdout_fd = open(stdout_file, 'w')
+            stderr_fd = open(stderr_file, 'w')
+
             process = subprocess.Popen(
                 [str(rtklib_path), '-o', str(config_file)],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1
+                stdin=stdin_fd,
+                stdout=stdout_fd,
+                stderr=stderr_fd,
+                start_new_session=True,  # Detach dal terminale
+                close_fds=True
             )
 
-            # Invia comando 'start'
-            process.stdin.write('start\n')
-            process.stdin.flush()
-            print("Comando 'start' inviato a RTKRCV")
+            # Chiudi i file descriptor nel processo padre
+            stdin_fd.close()
+            stdout_fd.close()
+            stderr_fd.close()
+
+            print(f"RTKRCV avviato in background (PID: {process.pid})")
+            print(f"Log output: {stdout_file}")
+
+            # Attendi avvio processo
+            time.sleep(2)
 
             # Monitora il file di soluzione
             start_time = time.time()
@@ -91,30 +112,49 @@ class Rover(Ricevitore):
             # Cleanup
             config_file.unlink(missing_ok=True)
             solution_file.unlink(missing_ok=True)
+            stdin_file.unlink(missing_ok=True)
+            stdout_file.unlink(missing_ok=True)
+            stderr_file.unlink(missing_ok=True)
 
             return fixed
 
         except Exception as e:
             print(f"Errore durante elaborazione RTKRCV: {e}")
             traceback.print_exc()
+
+            # Chiudi file descriptor se ancora aperti
+            for fd in [stdin_fd, stdout_fd, stderr_fd]:
+                try:
+                    if fd and not fd.closed:
+                        fd.close()
+                except:
+                    pass
+
+            # Termina processo se ancora attivo
             if process and process.poll() is None:
                 process.kill()
+
+            # Cleanup file temporanei
+            for tmp_file in [stdin_file, stdout_file, stderr_file, config_file, solution_file]:
+                try:
+                    tmp_file.unlink(missing_ok=True)
+                except:
+                    pass
+
             return False
 
     def _stop_rtkrcv(self, process):
         """Ferma RTKRCV in modo pulito"""
-        try:
-            process.stdin.write('stop\n')
-            process.stdin.flush()
-            time.sleep(0.5)
-            process.stdin.write('shutdown\n')
-            process.stdin.flush()
-        except:
-            pass
+        if process.poll() is not None:
+            # Processo già terminato
+            return
 
-        # Attendi terminazione o forza kill
         try:
+            # Prova prima con SIGTERM
+            process.terminate()
             process.wait(timeout=5)
         except subprocess.TimeoutExpired:
+            # Se non risponde, forza kill
+            print(f"RTKRCV non risponde, forzando terminazione...")
             process.kill()
             process.wait()
