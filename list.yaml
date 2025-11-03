@@ -14,7 +14,7 @@ receivers:
     role: rover
     serial: 2409-002
   2409-003:
-    ip: 10.158.0.189
+    ip: 10.158.0.190
     port: 2222
     role: rover
     serial: 2409-003
