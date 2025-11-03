@@ -1,5 +1,6 @@
 lib/
 rtkrcv.nav
+rtkrcv_*.trace
 
 # Python
 __pycache__/
