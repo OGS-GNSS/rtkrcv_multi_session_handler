@@ -8,6 +8,7 @@ def generate_rtkrcv_config(rover_serial: str, rover_ip: str, rover_port: int,
     
     tmp_file = Path(tempfile.gettempdir()) / f"rtkrcv_{rover_serial}.conf"
     solution_path = Path(tempfile.gettempdir()) / f"solution_{rover_serial}.pos"
+    trace_path = Path(tempfile.gettempdir()) / f"rtkrcv_trace_{rover_serial}.log"
     
     config_content = f"""# RTKRCV Configuration
 console-passwd=admin
@@ -155,7 +156,7 @@ file-dcbfile       =
 file-tempdir       =
 file-geexefile     =
 file-solstatfile   =
-file-tracefile     =
+file-tracefile     ={trace_path}
 """
 
     try:
