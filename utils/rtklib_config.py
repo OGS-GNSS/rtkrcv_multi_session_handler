@@ -14,6 +14,7 @@ console-passwd=admin
 console-timetype   =utc # (0:gpst,1:utc,2:jst,3:tow)
 console-soltype    =dms # (0:dms,1:deg,2:xyz,3:enu,4:pyl)
 console-solflag    =off # (0:off,1:std+2:age/ratio/ns)
+console-dev        =     # no console device needed
 #
 # OPTIONS 1
 pos1-posmode       =static-start     # (0:single,1:dgps,2:kinematic,3:static,4:movingbase,5:fixed,6:ppp-kine,7:ppp-static) static-start is from rtklibexplorer
@@ -136,6 +137,25 @@ ant2-postype=llh
 ant2-pos1={master_lat}
 ant2-pos2={master_lon}
 ant2-pos3={master_alt}
+
+# Misc settings
+misc-svrcycle      =10         # (ms)
+misc-timeout       =30000      # (ms)
+misc-reconnect     =30000      # (ms)
+misc-nmeacycle     =5000       # (ms)
+misc-buffsize      =32768      # (bytes)
+misc-navmsgsel     =all        # (0:all,1:rover,2:base,3:corr)
+
+# File paths (empty = not used)
+file-satantfile    =
+file-rcvantfile    =
+file-staposfile    =
+file-geoidfile     =
+file-dcbfile       =
+file-tempdir       =
+file-geexefile     =
+file-solstatfile   =
+file-tracefile     =
 """
 
     try:

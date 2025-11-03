@@ -40,32 +40,25 @@ class Rover(Ricevitore):
         
         # Definisci file soluzione e file temporanei
         solution_file = Path(tempfile.gettempdir()) / f"solution_{self.serial_number}.pos"
-        stdin_file = Path(tempfile.gettempdir()) / f"rtkrcv_stdin_{self.serial_number}.txt"
         stdout_file = Path(tempfile.gettempdir()) / f"rtkrcv_stdout_{self.serial_number}.log"
         stderr_file = Path(tempfile.gettempdir()) / f"rtkrcv_stderr_{self.serial_number}.log"
         print(f"File soluzione atteso: {solution_file}")
 
         process = None
-        stdin_fd = None
         stdout_fd = None
         stderr_fd = None
         try:
-            # Avvia RTKRCV
+            # Avvia RTKRCV con opzione -nc (start automatically without console)
             print(f"Avvio RTKRCV per Rover {self.serial_number}...")
-            print(f"Comando: {rtklib_path} -o {config_file}")
-
-            # Scrivi comandi nel file stdin
-            with open(stdin_file, 'w') as f:
-                f.write('start\n')
+            print(f"Comando: {rtklib_path} -nc -o {config_file}")
 
             # Apri i file per redirection
-            stdin_fd = open(stdin_file, 'r')
             stdout_fd = open(stdout_file, 'w')
             stderr_fd = open(stderr_file, 'w')
 
             process = subprocess.Popen(
-                [str(rtklib_path), '-o', str(config_file)],
-                stdin=stdin_fd,
+                [str(rtklib_path), '-nc', '-o', str(config_file)],
+                stdin=subprocess.DEVNULL,
                 stdout=stdout_fd,
                 stderr=stderr_fd,
                 start_new_session=True,  # Detach dal terminale
@@ -73,7 +66,6 @@ class Rover(Ricevitore):
             )
 
             # Chiudi i file descriptor nel processo padre
-            stdin_fd.close()
             stdout_fd.close()
             stderr_fd.close()
 
@@ -95,13 +87,12 @@ class Rover(Ricevitore):
                         self.set_coordinates(**coords)
                         fixed = True
                         break
-                
+
                 # Verifica se il processo è ancora attivo
                 if process.poll() is not None:
-                    stdout, stderr = process.communicate()
                     print(f"RTKRCV terminato inaspettatamente")
-                    print(f"STDOUT: {stdout}")
-                    print(f"STDERR: {stderr}")
+                    # Leggi i file di log invece di communicate()
+                    self._print_log_files(stdout_file, stderr_file)
                     break
 
                 time.sleep(1)
@@ -109,12 +100,23 @@ class Rover(Ricevitore):
             # Ferma RTKRCV
             self._stop_rtkrcv(process)
 
-            # Cleanup
+            # Stampa i log prima del cleanup
+            if not fixed:
+                print(f"\n=== Log RTKRCV per Rover {self.serial_number} ===")
+                self._print_log_files(stdout_file, stderr_file)
+
+            # Cleanup - preserva i log in caso di errore
             config_file.unlink(missing_ok=True)
             solution_file.unlink(missing_ok=True)
-            stdin_file.unlink(missing_ok=True)
-            stdout_file.unlink(missing_ok=True)
-            stderr_file.unlink(missing_ok=True)
+            if fixed:
+                # Rimuovi i log solo se il processo ha avuto successo
+                stdout_file.unlink(missing_ok=True)
+                stderr_file.unlink(missing_ok=True)
+            else:
+                # Preserva i log in caso di errore
+                print(f"Log preservati per debug:")
+                print(f"  STDOUT: {stdout_file}")
+                print(f"  STDERR: {stderr_file}")
 
             return fixed
 
@@ -123,7 +125,7 @@ class Rover(Ricevitore):
             traceback.print_exc()
 
             # Chiudi file descriptor se ancora aperti
-            for fd in [stdin_fd, stdout_fd, stderr_fd]:
+            for fd in [stdout_fd, stderr_fd]:
                 try:
                     if fd and not fd.closed:
                         fd.close()
@@ -135,13 +137,40 @@ class Rover(Ricevitore):
                 process.kill()
 
             # Cleanup file temporanei
-            for tmp_file in [stdin_file, stdout_file, stderr_file, config_file, solution_file]:
+            for tmp_file in [stdout_file, stderr_file, config_file, solution_file]:
                 try:
                     tmp_file.unlink(missing_ok=True)
                 except:
                     pass
 
             return False
+
+    def _print_log_files(self, stdout_file: Path, stderr_file: Path):
+        """Legge e stampa il contenuto dei file di log"""
+        try:
+            if stdout_file.exists():
+                with open(stdout_file, 'r') as f:
+                    stdout_content = f.read()
+                    if stdout_content.strip():
+                        print(f"\n--- STDOUT ---")
+                        print(stdout_content)
+                    else:
+                        print(f"\nSTDOUT: (vuoto)")
+            else:
+                print(f"\nSTDOUT: (file non trovato)")
+
+            if stderr_file.exists():
+                with open(stderr_file, 'r') as f:
+                    stderr_content = f.read()
+                    if stderr_content.strip():
+                        print(f"\n--- STDERR ---")
+                        print(stderr_content)
+                    else:
+                        print(f"\nSTDERR: (vuoto)")
+            else:
+                print(f"\nSTDERR: (file non trovato)")
+        except Exception as e:
+            print(f"Errore nella lettura dei log: {e}")
 
     def _stop_rtkrcv(self, process):
         """Ferma RTKRCV in modo pulito"""

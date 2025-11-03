@@ -27,9 +27,25 @@ class RTKManager:
 
             if role == 'master':
                 self.master = Master(item['serial'], item['ip'], item['port'])
+                # Carica coordinate se presenti nel YAML
+                if 'coords' in item:
+                    coords = item['coords']
+                    self.master.set_coordinates(
+                        lat=coords.get('lat'),
+                        lon=coords.get('lon'),
+                        alt=coords.get('alt')
+                    )
                 self.receivers.append(self.master)
             elif role == 'rover':
                 rover = Rover(item['serial'], item['ip'], item['port'])
+                # Carica coordinate se presenti nel YAML
+                if 'coords' in item:
+                    coords = item['coords']
+                    rover.set_coordinates(
+                        lat=coords.get('lat'),
+                        lon=coords.get('lon'),
+                        alt=coords.get('alt')
+                    )
                 self.rovers.append(rover)
                 self.receivers.append(rover)
 
