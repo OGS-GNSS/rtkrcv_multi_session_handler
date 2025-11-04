@@ -8,12 +8,14 @@ def generate_rtkrcv_config(rover_serial: str, rover_ip: str, rover_port: int,
     
     tmp_file = Path(tempfile.gettempdir()) / f"rtkrcv_{rover_serial}.conf"
     solution_path = Path(tempfile.gettempdir()) / f"solution_{rover_serial}.pos"
+    trace_path = Path(tempfile.gettempdir()) / f"rtkrcv_trace_{rover_serial}.log"
     
     config_content = f"""# RTKRCV Configuration
 console-passwd=admin
 console-timetype   =utc # (0:gpst,1:utc,2:jst,3:tow)
 console-soltype    =dms # (0:dms,1:deg,2:xyz,3:enu,4:pyl)
 console-solflag    =off # (0:off,1:std+2:age/ratio/ns)
+console-dev        =     # no console device needed
 #
 # OPTIONS 1
 pos1-posmode       =static-start     # (0:single,1:dgps,2:kinematic,3:static,4:movingbase,5:fixed,6:ppp-kine,7:ppp-static) static-start is from rtklibexplorer
@@ -112,11 +114,11 @@ ant2-antdelu       =0          # (m)
 # Input streams
 inpstr1-type=tcpcli
 inpstr1-path={rover_ip}:{rover_port}
-inpstr1-format=rtcm3
+inpstr1-format=ubx
 
 inpstr2-type=tcpcli
 inpstr2-path={master_ip}:{master_port}
-inpstr2-format=rtcm3
+inpstr2-format=ubx
 
 # Output stream
 outstr1-type=file
@@ -136,6 +138,25 @@ ant2-postype=llh
 ant2-pos1={master_lat}
 ant2-pos2={master_lon}
 ant2-pos3={master_alt}
+
+# Misc settings
+misc-svrcycle      =10         # (ms)
+misc-timeout       =30000      # (ms)
+misc-reconnect     =30000      # (ms)
+misc-nmeacycle     =5000       # (ms)
+misc-buffsize      =32768      # (bytes)
+misc-navmsgsel     =all        # (0:all,1:rover,2:base,3:corr)
+
+# File paths (empty = not used)
+file-satantfile    =
+file-rcvantfile    =
+file-staposfile    =
+file-geoidfile     =
+file-dcbfile       =
+file-tempdir       =
+file-geexefile     =
+file-solstatfile   =
+file-tracefile     ={trace_path}
 """
 
     try:
