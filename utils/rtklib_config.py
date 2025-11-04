@@ -114,11 +114,11 @@ ant2-antdelu       =0          # (m)
 # Input streams
 inpstr1-type=tcpcli
 inpstr1-path={rover_ip}:{rover_port}
-inpstr1-format=rtcm3
+inpstr1-format=ubx
 
 inpstr2-type=tcpcli
 inpstr2-path={master_ip}:{master_port}
-inpstr2-format=rtcm3
+inpstr2-format=ubx
 
 # Output stream
 outstr1-type=file
