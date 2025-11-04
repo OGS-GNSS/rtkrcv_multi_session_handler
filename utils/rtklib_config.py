@@ -20,11 +20,11 @@ console-solflag    =off # (0:off,1:std+2:age/ratio/ns)
 console-dev        =     # no console device needed
 #
 # OPTIONS 1
-pos1-posmode       =static-start     # (0:single,1:dgps,2:kinematic,3:static,4:movingbase,5:fixed,6:ppp-kine,7:ppp-static) static-start is from rtklibexplorer
-pos1-frequency     =l1         # (1:l1,2:l1+l2,3:l1+l2+l5,4:l1+l2+l5+l6,5:l1+l2+l5+l6+l7)
+pos1-posmode       =kinematic  # (0:single,1:dgps,2:kinematic,3:static,4:movingbase,5:fixed,6:ppp-kine,7:ppp-static)
+pos1-frequency     =l1+l2      # (1:l1,2:l1+l2,3:l1+l2+l5,4:l1+l2+l5+l6,5:l1+l2+l5+l6+l7)
 pos1-soltype       =forward    # (0:forward,1:backward,2:combined)
 pos1-elmask        =15         # (deg)
-pos1-snrmask_r     =on         # (0:off,1:on)
+pos1-snrmask_r     =off        # (0:off,1:on)
 pos1-snrmask_b     =on         # (0:off,1:on)
 pos1-snrmask_L1    =20,20,20,20,20,20,20,20,20
 pos1-snrmask_L2    =0,0,0,0,0,0,0,0,0
@@ -39,8 +39,8 @@ pos1-posopt2       =off        # (0:off,1:on)
 pos1-posopt3       =off        # (0:off,1:on)
 pos1-posopt4       =off        # (0:off,1:on)
 pos1-posopt5       =off        # (0:off,1:on)
-pos1-exclsats      =           # (prn ...)
-pos1-navsys        =45         # (1:gps+2:sbas+4:glo+8:gal+16:qzs+32:comp, all=63) #45 gps+glo+gal+bds (1+4+8+32)
+pos1-exclsats      =C50        # (prn ...) Esclude BeiDou PRN 50
+pos1-navsys        =45         # (1:gps+2:sbas+4:glo+8:gal+16:qzs+32:comp, all=63) #45=gps+glo+gal+bds (1+4+8+32)
 #
 # OPTIONS 2
 pos2-armode        =fix-and-hold # (0:off,1:continuous,2:instantaneous,3:fix-and-hold)
@@ -126,14 +126,6 @@ inpstr2-format=ubx
 outstr1-type=file
 outstr1-path={solution_path}
 outstr1-format=llh
-
-# Positioning mode
-pos1-posmode=kinematic
-pos1-frequency=l1+l2
-pos1-soltype=forward
-pos1-elmask=15
-pos1-snrmask_r=off
-pos1-dynamics=on
 
 # Base station position (Master)
 ant2-postype=llh
