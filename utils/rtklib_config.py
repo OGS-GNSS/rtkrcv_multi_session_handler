@@ -5,10 +5,12 @@ def generate_rtkrcv_config(rover_serial: str, rover_ip: str, rover_port: int,
                           master_ip: str, master_port: int,
                           master_lat: float, master_lon: float, master_alt: float) -> Path:
     """Genera file di configurazione per RTKRCV"""
-    
+
     tmp_file = Path(tempfile.gettempdir()) / f"rtkrcv_{rover_serial}.conf"
     solution_path = Path(tempfile.gettempdir()) / f"solution_{rover_serial}.pos"
-    trace_path = Path(tempfile.gettempdir()) / f"rtkrcv_trace_{rover_serial}.log"
+    # Trace file deve essere nella directory /tmp/rt/ dove RTKRCV viene eseguito
+    rtkrcv_tmp_dir = Path(tempfile.gettempdir()) / "rt"
+    trace_path = rtkrcv_tmp_dir / f"rtkrcv_{rover_serial}.trace"
     
     config_content = f"""# RTKRCV Configuration
 console-passwd=admin
@@ -38,13 +40,13 @@ pos1-posopt3       =off        # (0:off,1:on)
 pos1-posopt4       =off        # (0:off,1:on)
 pos1-posopt5       =off        # (0:off,1:on)
 pos1-exclsats      =           # (prn ...)
-pos1-navsys        =13         # (1:gps+2:sbas+4:glo+8:gal+16:qzs+32:comp, all=63) #13 gps+glo+gal
+pos1-navsys        =45         # (1:gps+2:sbas+4:glo+8:gal+16:qzs+32:comp, all=63) #45 gps+glo+gal+bds (1+4+8+32)
 #
 # OPTIONS 2
 pos2-armode        =fix-and-hold # (0:off,1:continuous,2:instantaneous,3:fix-and-hold)
 pos2-gloarmode     =off # (0:off,1:on,2:autocal)
 pos2-arfilter      =on           # hint by rtklibexplorer on, default off
-pos2-bdsarmode     =off          # (0:off,1:on)
+pos2-bdsarmode     =on          # (0:off,1:on) - Abilitato per usare BeiDou nella risoluzione ambiguità
 pos2-arlockcnt     =0            # hint by rtklibexplorer, default 0
 pos2-arthres       =3            # hint by rtklibexplorer 0.004, default 3
 pos2-arthres1      =0.99
