@@ -1053,27 +1053,17 @@ pos1-navsys = 47  # 1:GPS + 2:SBAS + 4:GLO + 8:GAL + 32:BDS = 47
    - Configurazione receiver via interfaccia grafica
    - Visualizzazione trace RTKRCV live
 
-3. **Supporto Multi-Base RTK**
-   - Gestire reti con multipli Master
-   - Selezione automatica base più vicina per ogni Rover
-   - Network RTK (VRS/FKP)
-
-4. **Persistenza Database**
+3. **Persistenza Database**
    - Storico posizioni in SQLite/PostgreSQL
    - Query temporali (es. posizione Rover X al tempo T)
    - Export dati in formati GIS (Shapefile, GeoJSON)
 
-5. **Notifiche e Alert**
-   - Email/Telegram quando fix RTK raggiunto
-   - Alert se timeout/errori critici
-   - Report giornaliero automatizzato
-
-6. **Quality Control**
+4. **Quality Control**
    - Validazione geometrica coordinate
    - Calcolo precision/accuracy metrics (CEP, RMS)
    - Outlier detection automatico
 
-7. **Configurazione Avanzata**
+5. **Configurazione Avanzata**
    - Timeout configurabili in YAML
    - Parametri RTKRCV personalizzabili per receiver
    - Profili di configurazione (urban/open-sky/forest)
@@ -1110,38 +1100,3 @@ Per domande, bug report o contributi:
 1. **Issues GitHub**: Aprire issue sul repository del progetto
 2. **Pull Request**: Contributi via PR sono benvenuti
 3. **Documentazione**: Riferirsi a questo documento per dettagli implementativi
-
----
-
-## Licenza
-
-[Specificare licenza del progetto]
-
----
-
-## Changelog
-
-### Versione Corrente
-
-- ✅ Gestione sessioni multiple Master/Rover
-- ✅ Monitoraggio real-time RTKRCV con overlay
-- ✅ Persistenza automatica coordinate in YAML
-- ✅ Gestione robusta errori e timeout
-- ✅ Cleanup intelligente file temporanei
-- ✅ Analisi automatica trace file
-- ✅ Supporto GPS + GLONASS
-- ✅ Esclusione satelliti problematici
-- ✅ Disabilitazione half-cycle detection
-
-### Commit Recenti
-
-- `478038e` - Modificato template file di configurazione
-- `61f3537` - Merge PR #3: Debug program issue
-- `617f3f1` - Fix: Risolto monitoraggio real-time trace RTKRCV e abilitato supporto BeiDou
-- `daf159d` - Impostato master su antenna udi2 e rover su antennina u2l0
-
----
-
-**Documentazione generata il**: 2025-01-04
-**Versione**: 1.0
-**Autore**: Claude Code (Anthropic)
