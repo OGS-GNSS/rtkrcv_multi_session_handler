@@ -5,7 +5,7 @@ Il programma coordina automaticamente le sessioni RTK (Real-Time Kinematic), ges
 
 ---
 
-## 🧩 Requisiti
+## Requisiti
 
 Per il corretto funzionamento è necessario:
 
@@ -15,9 +15,9 @@ Per il corretto funzionamento è necessario:
 
 ---
 
-## ⚙️ Installazione
+## Installazione
 
-### 1️⃣ Compilare RTKRCV
+### Compilare RTKRCV
 
 ```bash
 git clone --recurse-submodules [repository_url]
@@ -39,7 +39,7 @@ pip install -r requirements.txt
 
 ---
 
-## 🚀 Utilizzo
+## Utilizzo
 
 Eseguire:
 
@@ -56,7 +56,7 @@ Il programma:
 
 ---
 
-## 📘 Documentazione Completa
+## Documentazione Completa
 
 Per dettagli su:
 
@@ -65,5 +65,5 @@ Per dettagli su:
 * architettura del sistema
 * troubleshooting
 
-consulta 👉 **[DOCUMENTATION.md](DOCUMENTATION.md)**
+consulta -> **[DOCUMENTATION.md](DOCUMENTATION.md)**
 
