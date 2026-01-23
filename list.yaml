@@ -1,15 +1,19 @@
 receivers:
-  2409-001:
+  cal0:
     coords:
-      alt: 149.258
-      lat: 46.037347
-      lon: 13.253102
-    ip: 10.158.0.190
+      alt: 921.9
+      lat: 46.00829399999999
+      lon: 12.435029333333334
+    ip: 192.168.83.81
     port: 2222
     role: master
-    serial: 2409-001
-  2409-002:
-    ip: 10.158.0.163
+    serial: cal0
+  ful0:
+    coords:
+      alt: 537.95
+      lat: 46.414153027
+      lon: 13.001156791
+    ip: 192.168.81.81
     port: 2222
     role: rover
-    serial: 2409-002
+    serial: ful0
