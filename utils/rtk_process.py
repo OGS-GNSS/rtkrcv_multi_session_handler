@@ -89,29 +89,34 @@ class RTKProcess:
                 elapsed = time.time() - start_time
                 remaining = timeout - elapsed
                 
-                # Check trace file
-                self._update_trace_output(elapsed)
+                # Prepare status line
+                status_line = None
                 
                 # Check solution
                 if self.solution_file.exists():
                     if not hasattr(self, '_sol_file_seen'):
-                        print(f"File soluzione creato: {self.solution_file} (analizzo content...)", end='\r')
+                        print(f"File soluzione creato: {self.solution_file} (analizzo content...)", end='\n')
                         self._sol_file_seen = True
                         
                     sol = read_solution_file(self.solution_file)
                     if sol:
                         quality = sol.get('quality', 0)
-                        
+                        q_str = "FIX" if quality == 1 else "FLOAT" if quality == 2 else f"Q={quality}"
+                        status_line = f"Soluzione corrente: {sol['lat']:.8f}, {sol['lon']:.8f}, {sol['alt']:.3f} ({q_str}) - Time: {remaining:.0f}s"
+
                         # Se abbiamo FIX (Q=1), ritorniamo subito
                         if quality == 1:
+                            # Print final status clearly before returning
+                            if self.lines_printed > 0:
+                                print("\033[A\033[K" * self.lines_printed, end="")
                             return sol
                         
                         # Se abbiamo FLOAT (Q=2), salviamolo come fallback
                         if quality == 2:
-                            if best_solution is None:
-                                # Primo float trovato
-                                print(f"\nSoluzione FLOAT trovata, attendo FIX (ancora {int(remaining)}s)...")
                             best_solution = sol
+
+                # Check trace file with status
+                self._update_trace_output(elapsed, status_line)
 
                 # Check process status
                 if self.process.poll() is not None:
@@ -138,8 +143,8 @@ class RTKProcess:
         finally:
             self._cleanup_display()
 
-    def _update_trace_output(self, elapsed):
-        """Gestisce l'output del file trace"""
+    def _update_trace_output(self, elapsed: float, extra_status_line: Optional[str] = None):
+        """Aggiorna il display con le ultime righe del file trace e status opzionale"""
         if self.trace_file is None:
             self.trace_file = self._find_latest_trace_file()
             if self.trace_file:
@@ -148,18 +153,26 @@ class RTKProcess:
 
         if self.trace_file and self.trace_file.exists():
             current_lines = self._read_last_n_lines(self.trace_file, 3)
-            if current_lines and current_lines != self.last_trace_lines:
+            
+            # Combine trace lines and status line
+            display_lines = list(current_lines)
+            if extra_status_line:
+                display_lines.append("") # Spacer
+                display_lines.append(extra_status_line)
+
+            # Update if changed
+            if display_lines != self.last_trace_lines:
                 # Clear previous lines
                 if self.lines_printed > 0:
                      for _ in range(self.lines_printed):
                         print(f"\033[A\033[K", end='')
                 
                 # Print new lines
-                for line in current_lines:
+                for line in display_lines:
                     print(f"{line}")
                 
-                self.lines_printed = len(current_lines)
-                self.last_trace_lines = current_lines
+                self.lines_printed = len(display_lines)
+                self.last_trace_lines = display_lines
 
     def _cleanup_display(self):
         """Pulisce l'output del trace fine monitoraggio"""

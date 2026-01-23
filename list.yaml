@@ -1,18 +1,18 @@
 receivers:
   cal0:
     coords:
-      alt: 921.9
-      lat: 46.00829399999999
-      lon: 12.435029333333334
+      alt: 922.2
+      lat: 46.00829983333333
+      lon: 12.435029250000001
     ip: 192.168.83.81
     port: 2222
     role: master
     serial: cal0
   ful0:
     coords:
-      alt: 537.95
-      lat: 46.414153027
-      lon: 13.001156791
+      alt: 538.252
+      lat: 46.414157919
+      lon: 13.001156539
     ip: 192.168.81.81
     port: 2222
     role: rover
