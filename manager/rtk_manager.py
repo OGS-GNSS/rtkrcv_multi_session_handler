@@ -110,7 +110,56 @@ class RTKManager:
 
         # Carica configurazione
         self.load_receivers()
-        print(f"Caricati {len(self.receivers)} ricevitori")
+        
+        # --- VERIFICA ROBUSTEZZA ---
+        print("Verifica connettività ricevitori...")
+        from utils.stream_verifier import StreamVerifier
+        
+        # Verify Master
+        if self.master:
+             print(f"Verifica Master {self.master.serial_number}...", end=' ')
+             proto = StreamVerifier.detect_protocol(self.master.ip_address, self.master.port)
+             print(f"[{proto}]")
+             
+             if proto in ['ERROR', 'TIMEOUT']:
+                 print(f"⚠️  Master {self.master.serial_number} non raggiungibile ({proto}).")
+                 if not self.master.has_coordinates():
+                     print("❌ Criticita: Master offline e senza coordinate. Impossibile procedere.")
+                     return
+                 else:
+                     print("⚠️  Uso coordinate Master memorizzate.")
+             elif proto == 'SSH':
+                    print(f"❌ Master su porta SSH (22)? Configurazione errata.")
+                    return
+        
+        # Verify Rovers
+        active_rovers = []
+        for rover in self.rovers:
+            print(f"Verifica Rover {rover.serial_number}...", end=' ')
+            proto = StreamVerifier.detect_protocol(rover.ip_address, rover.port)
+            print(f"[{proto}]")
+            
+            if proto in ['ERROR', 'TIMEOUT']:
+                 print(f"⚠️  Rover {rover.serial_number} non raggiungibile. Skippo.")
+                 continue
+            
+            if proto == 'SSH':
+                 print(f"❌ Rover {rover.serial_number} porta SSH rilevata. Skippo.")
+                 continue
+                 
+            if proto == 'NMEA':
+                 print(f"⚠️  Attenzione: Rover {rover.serial_number} invia NMEA. RTKRCV richiede dati grezzi (UBX/RTCM).")
+            
+            active_rovers.append(rover)
+            
+        self.rovers = active_rovers
+        self.receivers = [self.master] + self.rovers if self.master else self.rovers
+        
+        if not self.rovers:
+            print("Nessun Rover attivo disponibile. Esco.")
+            return
+
+        print(f"Caricati {len(self.receivers)} ricevitori attivi")
 
         # Acquisisce posizione Master
         if not self.master.has_coordinates():
