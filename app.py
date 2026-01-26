@@ -61,10 +61,18 @@ def save_receivers():
 def start_process():
     """Launch main.py as subprocess."""
     global current_process
+    import shutil
     
     with process_lock:
         if current_process and current_process.poll() is None:
             return jsonify({"status": "error", "message": "Process already running"}), 400
+        
+        # Clean output/ and tmp/ folders
+        for folder in [OUTPUT_PATH, Path(__file__).parent / "tmp"]:
+            if folder.exists():
+                for file in folder.iterdir():
+                    if file.is_file():
+                        file.unlink()
         
         # Clear the queue
         while not process_queue.empty():

@@ -76,11 +76,8 @@
                     </div>
                 </div>
                 <div class="card-footer d-flex gap-2">
-                    <button id="btn-save" class="btn btn-primary">
-                        💾 Salva Configurazione
-                    </button>
-                    <button id="btn-start" class="btn btn-success">
-                        ▶️ Avvia
+                    <button id="btn-save-and-start" class="btn btn-success">
+                        🚀 Salva e Avvia
                     </button>
                 </div>
             </div>
@@ -290,21 +287,29 @@
             });
 
             if (res.ok) {
-                alert('✅ Configurazione salvata!');
                 receiversData = data;
+                return true;
             } else {
                 alert('❌ Errore nel salvataggio');
+                return false;
             }
         }
 
-        // =========================================
-        // Process Management
-        // =========================================
+        function clearMap() {
+            // Remove all markers from the map
+            map.eachLayer(layer => {
+                if (layer instanceof L.CircleMarker || layer instanceof L.Marker) {
+                    map.removeLayer(layer);
+                }
+            });
+        }
+
         async function startProcess() {
             const terminal = document.getElementById('terminal-output');
             const status = document.getElementById('process-status');
 
             terminal.textContent = '';
+            clearMap();  // Clear previous results
             status.textContent = 'Running...';
             status.className = 'badge bg-success';
 
@@ -345,6 +350,13 @@
             }
         }
 
+        async function saveAndStart() {
+            const saved = await saveConfig();
+            if (saved) {
+                await startProcess();
+            }
+        }
+
         // =========================================
         // Event Listeners
         // =========================================
@@ -353,8 +365,7 @@
             loadReceivers();
             // Map starts empty - will be populated after process completion
 
-            document.getElementById('btn-save').addEventListener('click', saveConfig);
-            document.getElementById('btn-start').addEventListener('click', startProcess);
+            document.getElementById('btn-save-and-start').addEventListener('click', saveAndStart);
             document.getElementById('btn-add-receiver').addEventListener('click', addReceiver);
         });
     </script>
