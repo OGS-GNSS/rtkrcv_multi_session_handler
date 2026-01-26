@@ -66,7 +66,7 @@ Il sistema gestisce sessioni multiple di posizionamento RTK coordinando:
 3. **Master → RTKRCV**: Le coordinate del Master diventano la base per le correzioni RTK
 4. **Rover → RTKRCV**: I Rover ricevono correzioni differenziali e calcolano posizioni precise
 5. **RTKRCV → Solution File**: Le coordinate precise vengono scritte su file `.pos`
-6. **Manager → YAML**: Le coordinate vengono persistite nel file di configurazione
+6. **Manager → Output**: Le coordinate vengono scritte su file KML nella directory `output/`
 
 ---
 
@@ -123,9 +123,9 @@ python main.py
 
 ## Configurazione
 
-### File di Configurazione: `list.yaml`
+### File di Configurazione: `stations.yaml`
 
-Il file `list.yaml` è il file di configurazione centrale che definisce tutti i receiver GNSS da gestire.
+Il file `stations.yaml` è il file di configurazione centrale che definisce tutti i receiver GNSS da gestire. Il file viene validato all'avvio per garantire la correttezza della struttura.
 
 #### Struttura del File
 
@@ -136,10 +136,7 @@ receivers:
     ip: <ip_address>
     port: <port_number>
     role: master|rover
-    coords:           # Opzionale, popolato automaticamente
-      lat: <latitude>
-      lon: <longitude>
-      alt: <altitude>
+    # coords: ... (Le coordinate non vengono più salvate qui)
 ```
 
 #### Esempio Configurazione
@@ -180,8 +177,8 @@ receivers:
 
 - **Un solo Master**: Il sistema supporta un solo receiver Master per sessione
 - **Multipli Rover**: È possibile configurare N receiver Rover
-- **Coordinate Opzionali**: Se presenti, il sistema salta l'acquisizione e usa quelle esistenti
-- **Persistenza Automatica**: Le coordinate vengono salvate automaticamente dopo ogni acquisizione
+- **Coordinate Opzionali**: Se presenti nel file (manualmente), il sistema le usa
+- **Output Separato**: I risultati vengono salvati in un file KML separato, non nel YAML
 
 ### Configurazione RTKRCV
 
@@ -228,7 +225,7 @@ python main.py
 Caricati 2 ricevitori
 Acquisizione posizione Master da stream NMEA...
 Master posizionato: Lat=46.037347, Lon=13.253102, Alt=149.258
-Configurazione salvata in ./list.yaml
+# Output salvato alla fine
 
 Processing Rover 2409-002...
 File di configurazione creato: /tmp/rtkrcv_2409-002.conf
@@ -242,11 +239,11 @@ Attendo inizializzazione RTKRCV e creazione file trace...
 2025/01/04 15:30:50 $GNGGA solution: 46.037123,13.253456,148.234 Q=1 ns=12
 2025/01/04 15:30:51 $GNGGA solution: 46.037124,13.253457,148.235 Q=1 ns=12
 2025/01/04 15:30:52 $GNGGA solution: 46.037125,13.253458,148.236 Q=1 ns=12
-
 Rover 2409-002 posizionato: Lat=46.037124, Lon=13.253457, Alt=148.235
-Configurazione salvata in ./list.yaml
+# Output salvato alla fine
 
 === Processo completato ===
+File KML creato: output/output_20250104_153500.kml
 Serial: 2409-001, IP: 10.158.0.190, Port: 2222, Role: master | Lat=46.037347, Lon=13.253102, Alt=149.258
 Serial: 2409-002, IP: 10.158.0.163, Port: 2222, Role: rover | Lat=46.037124, Lon=13.253457, Alt=148.235
 ```
@@ -256,7 +253,7 @@ Serial: 2409-002, IP: 10.158.0.163, Port: 2222, Role: rover | Lat=46.037124, Lon
 1. **Se il Master ha già coordinate**: Salta l'acquisizione NMEA e procede direttamente ai Rover
 2. **Se un Rover ha già coordinate**: Le sovrascrive con nuova acquisizione
 3. **Elaborazione Sequenziale**: I Rover vengono processati uno alla volta (non in parallelo)
-4. **Persistenza Incrementale**: Il file YAML viene salvato dopo ogni receiver con successo
+4. **Output KML**: Viene generato un singolo file KML finale nella directory `output/`
 
 ---
 
@@ -273,9 +270,9 @@ main.py
   ├─► RTKManager.run()
       │
       ├─► load_receivers()
-      │   ├─► Legge list.yaml
-      │   ├─► Crea oggetti Master e Rover
-      │   └─► Carica coordinate esistenti (se presenti)
+      │   ├─► Validatore.validate_config()
+      │   ├─► Legge stations.yaml
+      │   └─► Crea oggetti Master e Rover
       │
       ├─► acquire_master_position() [se necessario]
       │   ├─► Master.read_nmea_position()
@@ -283,7 +280,7 @@ main.py
       │   │   ├─► Ricezione stream NMEA
       │   │   ├─► parse_gga() per estrarre coordinate
       │   │   └─► Imposta coordinate Master
-      │   └─► save_config() [salva coordinate in YAML]
+      │   └─► [Nessun salvataggio intermedio]
       │
       └─► process_rovers()
           │
@@ -315,7 +312,7 @@ main.py
               │   └─► Cleanup file temporanei
               │       └─► Preserva log se errore
               │
-              └─► save_config() [salva coordinate in YAML]
+              └─► [Nessun salvataggio intermedio]
 ```
 
 ### Stati del Processo
@@ -371,8 +368,8 @@ Acquisisce la posizione del Master tramite stream NMEA TCP.
 ##### `process_rovers()`
 Elabora sequenzialmente tutti i Rover configurati chiamando `Rover.process_with_rtkrcv()` per ognuno.
 
-##### `save_config()`
-Salva la configurazione aggiornata (con coordinate) nel file YAML.
+##### `save_results()`
+Salva le coordinate acquisite in un file KML timestamped nella directory `output/`.
 
 ##### `run()`
 Punto di ingresso principale che esegue il workflow completo:
@@ -406,6 +403,8 @@ Restituisce le coordinate come dizionario `{'lat': ..., 'lon': ..., 'alt': ...}`
 
 ##### `has_coordinates()`
 Verifica se le coordinate sono state impostate.
+
+Altri attributi: `sol_status`, `linked_master_id`.
 
 ---
 
@@ -486,7 +485,7 @@ Elabora il Rover eseguendo RTKRCV con correzioni differenziali dal Master.
        # Trova trace file dinamicamente
        trace_file = _find_latest_trace_file()
 
-       # Leggi ultime 3 righe
+       # Legge ultime 3 righe
        current_lines = _read_last_n_lines(trace_file, 3)
 
        # Aggiorna display con ANSI overlay
@@ -597,7 +596,19 @@ for line in reversed(lines):
 
 ---
 
-### 7. Utility: Generatore Config RTKRCV (`utils/rtklib_config.py`)
+### 7. Utility: Validatore Configurazione (`utils/validator.py`)
+
+##### `validate_config(config_path)`
+
+Valida la struttura e i campi obbligatori del file YAML.
+
+### 8. Utility: KML Writer (`utils/kml_writer.py`)
+
+##### `write(receivers, output_path)`
+
+Genera file KML con placemark per ogni receiver, includendo dettagli su tipo, master e stato soluzione.
+
+### 9. Utility: Generatore Config RTKRCV (`utils/rtklib_config.py`)
 
 ##### `generate_rtkrcv_config(rover_serial, rover_ip, rover_port, master_ip, master_port, master_lat, master_lon, master_alt)`
 
@@ -633,7 +644,7 @@ Genera un file di configurazione ottimizzato per RTKRCV.
 rtkrcv_multi_session_handler/
 │
 ├── main.py                    # Entry point del programma
-├── list.yaml                  # Configurazione receiver GNSS
+├── stations.yaml              # Configurazione receiver GNSS
 ├── requirements.txt           # Dipendenze Python
 │
 ├── manager/
@@ -680,6 +691,7 @@ rtkrcv_multi_session_handler/
 | **STDOUT Log** | `/tmp/rtkrcv_stdout_{serial}.log` | Output standard RTKRCV | Rimosso se successo |
 | **STDERR Log** | `/tmp/rtkrcv_stderr_{serial}.log` | Errori RTKRCV | Rimosso se successo |
 | **Trace File** | `/tmp/rt/rtkrcv_*.trace` | Log dettagliato RTKRCV (debug level 2) | Rimosso se successo |
+| **KML Output** | `output/output_*.kml` | File risultati finale | Persistente |
 
 ### Preservazione Log in Caso di Errore
 
@@ -700,7 +712,7 @@ Log preservati per debug:
 
 #### 1. Errori di Configurazione
 
-**Problema**: File `list.yaml` non trovato o malformato
+**Problema**: File `stations.yaml` non trovato o malformato
 
 **Gestione**:
 ```python
@@ -942,7 +954,7 @@ grep '$GNGGA' /tmp/rt/rtkrcv_*.trace | tail -n 20
 ```python
 import yaml
 
-with open('list.yaml') as f:
+with open('stations.yaml') as f:
     data = yaml.safe_load(f)
     print(yaml.dump(data, default_flow_style=False))
 ```

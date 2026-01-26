@@ -49,10 +49,10 @@ python main.py
 
 Il programma:
 
-1. Legge la configurazione dei ricevitori da `list.yaml`
+1. Legge la configurazione dei ricevitori da `stations.yaml`
 2. Acquisisce la posizione del **Master** tramite stream NMEA
 3. Lancia processi `rtkrcv` per ogni **Rover** per calcolare le posizioni precise
-4. Aggiorna automaticamente le coordinate nel file YAML
+4. Genera automaticamente un file KML nella directory `output/`
 
 ---
 

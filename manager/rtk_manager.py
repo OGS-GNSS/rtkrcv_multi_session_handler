@@ -6,6 +6,7 @@ from models.master import Master
 from models.rover import Rover
 from models.receiver import Ricevitore
 from utils.kml_writer import KMLWriter
+from utils.validator import Validator
 
 class RTKManager:
     """Gestisce il processo completo di acquisizione coordinate RTK"""
@@ -18,8 +19,8 @@ class RTKManager:
 
     def load_receivers(self) -> None:
         """Carica ricevitori da file YAML"""
-        if not self.yaml_path.exists():
-            raise FileNotFoundError(f"File non trovato: {self.yaml_path}")
+        # Validazione configurazione
+        Validator.validate_config(self.yaml_path)
 
         with open(self.yaml_path, 'r') as f:
             data = yaml.safe_load(f)

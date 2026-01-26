@@ -1,5 +1,6 @@
 lib/
 tmp/
+output/
 rtkrcv.nav
 rtkrcv_*.trace
 
