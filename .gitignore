@@ -5,6 +5,7 @@ rtkrcv.nav
 rtkrcv_*.trace
 
 # Python
+.venv/
 __pycache__/
 *.py[cod]
 *$py.class
