@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTKRCV Dashboard</title>
+    <meta name="description" content="Dashboard per gestione ricevitori GNSS RTK">
+
+    <!-- Bootstrap 5 Dark Theme -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-dark-5@1.1.3/dist/css/bootstrap-dark.min.css" rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fira+Code&display=swap"
+        rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="bg-dark text-light">
+    <div class="container-fluid py-4">
+        <!-- Header -->
+        <header class="mb-4">
+            <h1 class="display-6 fw-bold">
+                <span class="text-primary">RTKRCV</span> Multi Session Handler
+            </h1>
+            <p class="text-muted">Dashboard per configurazione e monitoraggio ricevitori GNSS</p>
+        </header>
+
+        <!-- Map Section -->
+        <section id="map-section" class="mb-4">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📍 Mappa Risultati</h5>
+                    <div class="d-flex gap-2">
+                        <a id="btn-download-kml" href="/api/kml" download class="btn btn-sm btn-outline-success">
+                            ⬇️ Scarica KML
+                        </a>
+                        <button id="btn-refresh-map" class="btn btn-sm btn-outline-primary">
+                            🔄 Aggiorna Mappa
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Receivers Table Section -->
+        <section id="receivers-section" class="mb-4">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📡 Configurazione Ricevitori</h5>
+                    <button id="btn-add-receiver" class="btn btn-sm btn-outline-success">
+                        ➕ Aggiungi Ricevitore
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover align-middle" id="receivers-table">
+                            <thead>
+                                <tr>
+                                    <th>Serial</th>
+                                    <th>IP</th>
+                                    <th>Port</th>
+                                    <th>Role</th>
+                                    <th>Timeout (s)</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody id="receivers-tbody">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer d-flex gap-2">
+                    <button id="btn-save" class="btn btn-primary">
+                        💾 Salva Configurazione
+                    </button>
+                    <button id="btn-start" class="btn btn-success">
+                        ▶️ Avvia
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Terminal Section -->
+        <section id="terminal-section">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">🖥️ Output Terminale</h5>
+                    <span id="process-status" class="badge bg-secondary">Idle</span>
+                </div>
+                <div class="card-body p-0">
+                    <pre id="terminal-output"></pre>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // =========================================
+        // State Management
+        // =========================================
+        let receiversData = { receivers: {} };
+        let map = null;
+        let eventSource = null;
+
+        // =========================================
+        // Map Initialization
+        // =========================================
+        function initMap() {
+            map = L.map('map').setView([46.037, 13.253], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        }
+
+        async function loadKmlOnMap() {
+            try {
+                const res = await fetch('/api/kml/json');
+                if (!res.ok) {
+                    console.log('No KML data available');
+                    return;
+                }
+                const data = await res.json();
+
+                // Clear existing markers
+                map.eachLayer(layer => {
+                    if (layer instanceof L.Marker) {
+                        map.removeLayer(layer);
+                    }
+                });
+
+                const bounds = [];
+                data.placemarks.forEach(pm => {
+                    const isMaster = pm.style.includes('master');
+                    const color = isMaster ? 'red' : 'green';
+
+                    const marker = L.circleMarker([pm.lat, pm.lon], {
+                        radius: 10,
+                        fillColor: color,
+                        color: '#fff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    });
+
+                    marker.bindPopup(`<strong>${pm.name}</strong><br>${pm.description.replace(/\n/g, '<br>')}`);
+                    marker.addTo(map);
+                    bounds.push([pm.lat, pm.lon]);
+                });
+
+                if (bounds.length > 0) {
+                    map.fitBounds(bounds, { padding: [50, 50] });
+                }
+            } catch (err) {
+                console.error('Error loading KML:', err);
+            }
+        }
+
+        // =========================================
+        // Receivers Table
+        // =========================================
+        async function loadReceivers() {
+            const res = await fetch('/api/receivers');
+            receiversData = await res.json();
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('receivers-tbody');
+            tbody.innerHTML = '';
+
+            for (const [serial, config] of Object.entries(receiversData.receivers || {})) {
+                const isMaster = config.role === 'master';
+                const row = document.createElement('tr');
+                row.dataset.serial = serial;
+
+                row.innerHTML = `
+                    <td>
+                        <input type="text" class="form-control form-control-sm bg-dark text-light" 
+                               value="${serial}" data-field="serial" readonly>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm bg-dark text-light" 
+                               value="${config.ip}" data-field="ip">
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm bg-dark text-light" 
+                               value="${config.port}" data-field="port" min="1" max="65535">
+                    </td>
+                    <td>
+                        <div class="form-check form-check-inline">
+                            <input type="radio" class="form-check-input" name="master-radio" 
+                                   id="master-${serial}" ${isMaster ? 'checked' : ''}
+                                   onchange="setMaster('${serial}')">
+                            <label class="form-check-label" for="master-${serial}">Master</label>
+                        </div>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm bg-dark text-light timeout-field" 
+                               value="${config.timeout || 60}" data-field="timeout" min="1"
+                               ${isMaster ? 'disabled style="opacity: 0.3"' : ''}>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteReceiver('${serial}')">
+                            🗑️
+                        </button>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            }
+        }
+
+        function setMaster(serial) {
+            // Update all receivers: only selected one is master
+            for (const [key, config] of Object.entries(receiversData.receivers)) {
+                if (key === serial) {
+                    config.role = 'master';
+                    delete config.timeout; // Master doesn't have timeout
+                } else {
+                    config.role = 'rover';
+                    if (!config.timeout) config.timeout = 60;
+                }
+            }
+            renderTable();
+        }
+
+        function addReceiver() {
+            const serial = `receiver_${Date.now()}`;
+            receiversData.receivers[serial] = {
+                ip: '10.0.0.1',
+                port: 2222,
+                role: 'rover',
+                serial: serial,
+                timeout: 60
+            };
+            renderTable();
+        }
+
+        function deleteReceiver(serial) {
+            delete receiversData.receivers[serial];
+            renderTable();
+        }
+
+        function collectTableData() {
+            const rows = document.querySelectorAll('#receivers-tbody tr');
+            const newData = { receivers: {} };
+
+            rows.forEach(row => {
+                const serial = row.querySelector('[data-field="serial"]').value;
+                const ip = row.querySelector('[data-field="ip"]').value;
+                const port = parseInt(row.querySelector('[data-field="port"]').value);
+                const isMaster = row.querySelector('input[type="radio"]').checked;
+                const timeout = parseInt(row.querySelector('[data-field="timeout"]').value);
+
+                newData.receivers[serial] = {
+                    ip: ip,
+                    port: port,
+                    role: isMaster ? 'master' : 'rover',
+                    serial: serial
+                };
+
+                if (!isMaster) {
+                    newData.receivers[serial].timeout = timeout;
+                }
+            });
+
+            return newData;
+        }
+
+        async function saveConfig() {
+            const data = collectTableData();
+            const res = await fetch('/api/receivers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                alert('✅ Configurazione salvata!');
+                receiversData = data;
+            } else {
+                alert('❌ Errore nel salvataggio');
+            }
+        }
+
+        // =========================================
+        // Process Management
+        // =========================================
+        async function startProcess() {
+            const terminal = document.getElementById('terminal-output');
+            const status = document.getElementById('process-status');
+
+            terminal.textContent = '';
+            status.textContent = 'Running...';
+            status.className = 'badge bg-success';
+
+            const res = await fetch('/api/start', { method: 'POST' });
+            const result = await res.json();
+
+            if (result.status === 'started') {
+                // Start SSE connection
+                if (eventSource) eventSource.close();
+                eventSource = new EventSource('/api/stream');
+
+                eventSource.onmessage = (e) => {
+                    if (e.data === '[PROCESS_END]') {
+                        status.textContent = 'Completed';
+                        status.className = 'badge bg-info';
+                        eventSource.close();
+                        // Auto-refresh map after process completes
+                        setTimeout(loadKmlOnMap, 500);
+                    } else if (e.data.trim()) {
+                        // Preserve newlines from the output
+                        terminal.textContent += e.data;
+                        if (!e.data.endsWith('\n')) {
+                            terminal.textContent += '\n';
+                        }
+                        terminal.scrollTop = terminal.scrollHeight;
+                    }
+                };
+
+                eventSource.onerror = () => {
+                    status.textContent = 'Error';
+                    status.className = 'badge bg-danger';
+                    eventSource.close();
+                };
+            } else {
+                alert(result.message || 'Errore avvio processo');
+                status.textContent = 'Error';
+                status.className = 'badge bg-danger';
+            }
+        }
+
+        // =========================================
+        // Event Listeners
+        // =========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            loadReceivers();
+            // Map starts empty - will be populated after process completion
+
+            document.getElementById('btn-save').addEventListener('click', saveConfig);
+            document.getElementById('btn-start').addEventListener('click', startProcess);
+            document.getElementById('btn-add-receiver').addEventListener('click', addReceiver);
+            document.getElementById('btn-refresh-map').addEventListener('click', loadKmlOnMap);
+        });
+    </script>
+</body>
+
+</html>
