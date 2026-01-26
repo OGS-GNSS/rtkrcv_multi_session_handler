@@ -8,7 +8,7 @@ from utils.rtk_process import RTKProcess
 class Rover(Ricevitore):
     """Rover che riceve coordinate da RTKRCV"""
     """Rover che riceve coordinate da RTKRCV"""
-    def __init__(self, serial_number: str, ip_address: str, port: int, timeout: int = 300):
+    def __init__(self, serial_number: str, ip_address: str, port: int, timeout: int = 150):
         super().__init__(serial_number, ip_address, port, 'rover')
         self.timeout = timeout
 
