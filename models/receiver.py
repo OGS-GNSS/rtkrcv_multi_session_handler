@@ -10,10 +10,16 @@ class Ricevitore:
         self.role = role
         self.coords: Optional[Coordinates] = None
         self.running = False
+        self.sol_status: Optional[str] = None
+        self.linked_master_id: Optional[str] = None
 
-    def set_coordinates(self, lat: float, lon: float, alt: float) -> None:
+    def set_coordinates(self, lat: float, lon: float, alt: float, status: str = None, master_id: str = None) -> None:
         """Imposta le coordinate del ricevitore"""
         self.coords = Coordinates(lat, lon, alt)
+        if status:
+            self.sol_status = status
+        if master_id:
+            self.linked_master_id = master_id
 
     def get_coordinates(self) -> Optional[Dict[str, float]]:
         if self.coords is None:

@@ -1,9 +1,11 @@
 from pathlib import Path
 from typing import List, Optional
 import yaml
+import datetime
 from models.master import Master
 from models.rover import Rover
 from models.receiver import Ricevitore
+from utils.kml_writer import KMLWriter
 
 class RTKManager:
     """Gestisce il processo completo di acquisizione coordinate RTK"""
@@ -60,7 +62,7 @@ class RTKManager:
 
         if success:
             print(f"Master posizionato: {self.master.coords}")
-            self.save_config()
+            # Salvataggio solo alla fine
         else:
             print("Impossibile acquisire posizione Master")
 
@@ -78,31 +80,19 @@ class RTKManager:
 
             if success:
                 print(f"Rover {rover.serial_number} posizionato: {rover.coords}")
-                self.save_config()
             else:
                 print(f"Impossibile posizionare Rover {rover.serial_number}")
 
-    def save_config(self) -> None:
-        """Salva configurazione aggiornata con coordinate"""
-        data = {'receivers': {}}
+    def save_results(self) -> None:
+        """Salva risultati su file KML"""
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_dir = Path("output")
+        output_dir.mkdir(exist_ok=True)
+        
+        output_filename = f"output_{timestamp}.kml"
+        output_path = output_dir / output_filename
 
-        for rcv in self.receivers:
-            rcv_data = {
-                'serial': rcv.serial_number,
-                'ip': rcv.ip_address,
-                'port': rcv.port,
-                'role': rcv.role
-            }
-
-            if rcv.has_coordinates():
-                rcv_data['coords'] = rcv.get_coordinates()
-
-            data['receivers'][rcv.serial_number] = rcv_data
-
-        with open(self.yaml_path, 'w') as f:
-            yaml.dump(data, f, default_flow_style=False)
-
-        print(f"Configurazione salvata in {self.yaml_path}")
+        KMLWriter.write(self.receivers, output_path)
 
     def run(self) -> None:
         """Esegue il workflow completo"""
@@ -171,6 +161,8 @@ class RTKManager:
 
         # Processa Rover
         self.process_rovers()
+
+        self.save_results()
 
         print("\n=== Processo completato ===")
         for rcv in self.receivers:

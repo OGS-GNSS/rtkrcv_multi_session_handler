@@ -56,7 +56,13 @@ class Rover(Ricevitore):
             
             # Extract coordinates
             coords = {k: v for k, v in result.items() if k in ['lat', 'lon', 'alt']}
-            self.set_coordinates(**coords)
+            self.set_coordinates(
+                lat=coords['lat'], 
+                lon=coords['lon'], 
+                alt=coords['alt'],
+                status=status_str,
+                master_id=master.serial_number
+            )
             
             # Se Float, aggiunge nota (se possibile, la classe Receiver potrebbe non avere campo note, controllo)
             # Controllo base: Receiver ha coords che è un oggetto o dizionario?
