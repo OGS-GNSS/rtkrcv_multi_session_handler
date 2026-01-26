@@ -47,5 +47,8 @@ class Validator:
             if not isinstance(rcv['port'], int):
                 raise ValueError(f"Ricevitore '{name}' porta deve essere intero, trovato: {type(rcv['port'])}")
 
+            if 'timeout' in rcv and not isinstance(rcv['timeout'], int):
+                raise ValueError(f"Ricevitore '{name}' timeout deve essere intero, trovato: {type(rcv['timeout'])}")
+
         print(f"Configurazione valida: {len(receivers)} ricevitori trovati.")
         return True

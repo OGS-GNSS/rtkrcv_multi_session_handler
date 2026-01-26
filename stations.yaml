@@ -9,3 +9,4 @@ receivers:
     port: 2222
     role: rover
     serial: UDI2-L0
+    timeout: 60

@@ -7,10 +7,12 @@ from utils.rtk_process import RTKProcess
 
 class Rover(Ricevitore):
     """Rover che riceve coordinate da RTKRCV"""
-    def __init__(self, serial_number: str, ip_address: str, port: int):
+    """Rover che riceve coordinate da RTKRCV"""
+    def __init__(self, serial_number: str, ip_address: str, port: int, timeout: int = 300):
         super().__init__(serial_number, ip_address, port, 'rover')
+        self.timeout = timeout
 
-    def process_with_rtkrcv(self, master, rtklib_path: Path, timeout: int = 300) -> bool:
+    def process_with_rtkrcv(self, master, rtklib_path: Path) -> bool:
         """Avvia RTKRCV per ottenere posizione con correzioni differenziali"""
         if not master.has_coordinates():
             print(f"Master non ha coordinate impostate")
@@ -46,8 +48,8 @@ class Rover(Ricevitore):
         if not rtk_process.start():
             return False
             
-        print(f"\nAttendo soluzione FIX (timeout: {timeout}s)...")
-        result = rtk_process.wait_for_fix(timeout)
+        print(f"\nAttendo soluzione FIX (timeout: {self.timeout}s)...")
+        result = rtk_process.wait_for_fix(self.timeout)
         
         success = False
         if result:

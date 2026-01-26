@@ -40,7 +40,8 @@ class RTKManager:
                     )
                 self.receivers.append(self.master)
             elif role == 'rover':
-                rover = Rover(item['serial'], item['ip'], item['port'])
+                timeout = item.get('timeout', 300)
+                rover = Rover(item['serial'], item['ip'], item['port'], timeout)
                 # Carica coordinate se presenti nel YAML
                 if 'coords' in item:
                     coords = item['coords']

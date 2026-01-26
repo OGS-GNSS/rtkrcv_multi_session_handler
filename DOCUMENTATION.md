@@ -136,6 +136,7 @@ receivers:
     ip: <ip_address>
     port: <port_number>
     role: master|rover
+    timeout: 300      # Opzionale, default 300s
     # coords: ... (Le coordinate non vengono più salvate qui)
 ```
 
@@ -168,6 +169,7 @@ receivers:
 | `ip` | String | Indirizzo IP del receiver sulla rete |
 | `port` | Integer | Porta TCP per connessione (tipicamente 2222) |
 | `role` | String | Ruolo del receiver: `master` o `rover` |
+| `timeout` | Integer | (Opzionale) Timeout in secondi per acquisizione (default: 300) |
 | `coords` | Object | Coordinate acquisite (popolato automaticamente) |
 | `coords.lat` | Float | Latitudine in gradi decimali |
 | `coords.lon` | Float | Longitudine in gradi decimali |
@@ -608,7 +610,19 @@ Valida la struttura e i campi obbligatori del file YAML.
 
 Genera file KML con placemark per ogni receiver, includendo dettagli su tipo, master e stato soluzione.
 
-### 9. Utility: Generatore Config RTKRCV (`utils/rtklib_config.py`)
+### 10. Utility: Gestore Processi RTK (`utils/rtk_process.py`)
+
+##### `RTKProcess(config_file, rtklib_path, output_dir)`
+
+Gestisce l'esecuzione del processo binario `rtkrcv`, inclusi avvio, stop e monitoraggio file.
+
+### 11. Utility: Verifica Stream (`utils/stream_verifier.py`)
+
+##### `StreamVerifier.detect_protocol(ip, port)`
+
+Verifica se una porta TCP è aperta e cerca di identificare il protocollo (UBX, NMEA, RTCM, ecc.) analizzando i byte ricevuti.
+
+### 12. Utility: Generatore Config RTKRCV (`utils/rtklib_config.py`)
 
 ##### `generate_rtkrcv_config(rover_serial, rover_ip, rover_port, master_ip, master_port, master_lat, master_lon, master_alt)`
 
@@ -645,7 +659,14 @@ rtkrcv_multi_session_handler/
 │
 ├── main.py                    # Entry point del programma
 ├── stations.yaml              # Configurazione receiver GNSS
+├── verify_streams.py          # Script standalone per verifica stream
 ├── requirements.txt           # Dipendenze Python
+│
+├── output/                    # Directory output KML
+│   └── ...
+│
+├── tmp/                       # Directory file temporanei
+│   └── ...
 │
 ├── manager/
 │   ├── __init__.py
@@ -660,6 +681,10 @@ rtkrcv_multi_session_handler/
 │
 ├── utils/
 │   ├── __init__.py
+│   ├── validator.py           # Validatore configurazione
+│   ├── kml_writer.py          # Generatore output KML
+│   ├── stream_verifier.py     # Analyzer protocolli stream
+│   ├── rtk_process.py         # Wrapper subprocess rtkrcv
 │   ├── nmea_parser.py         # Parser messaggi NMEA GGA (40 righe)
 │   ├── solution_reader.py     # Lettore file soluzione RTKLIB (35 righe)
 │   └── rtklib_config.py       # Generatore config RTKRCV (259 righe)
