@@ -71,13 +71,21 @@ class RTKManager:
         return success
 
     def process_rovers(self) -> None:
-        """Processa tutti i Rover per acquisire le loro posizioni"""
+        """
+        Processa tutti i Rover per acquisire le loro posizioni.
+        
+        TENSION: Sequentiality vs Throughput
+        I rover vengono processati sequenzialmente. Questo semplifica drasticamente il debugging
+        e la gestione delle risorse (porte, CPU), ma aumenta il tempo totale di esecuzione
+        linearmente con il numero di rover (O(N)). In un sistema di produzione con molti rover,
+        questo sarebbe un collo di bottiglia critico.
+        """
         if not self.master or not self.master.has_coordinates():
             print("Master non ha coordinate valide")
             return
 
         for rover in self.rovers:
-            print(f"\nProcessing Rover {rover.serial_number}...")
+            print(f"\\nProcessing Rover {rover.serial_number}...")
             success = rover.process_with_rtkrcv(self.master, self.rtklib_path)
 
             if success:
@@ -86,7 +94,15 @@ class RTKManager:
                 print(f"Impossibile posizionare Rover {rover.serial_number}")
 
     def save_results(self) -> None:
-        """Salva risultati su file KML"""
+        """
+        Salva risultati su file KML.
+        
+        TENSION: State vs Persistence
+        Il sistema mantiene lo stato in memoria durante l'esecuzione e persiste i risultati
+        solo alla fine. Questo evita scritture parziali e conflitti, ma comporta il rischio
+        di perdere tutto il lavoro se il processo crasha prima della fine. L'alternativa
+        sarebbe un database o un file di stato incrementale.
+        """
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         output_dir = Path("output")
         output_dir.mkdir(exist_ok=True)
@@ -103,7 +119,38 @@ class RTKManager:
         # Carica configurazione
         self.load_receivers()
         
-        # --- VERIFICA ROBUSTEZZA ---
+        # Verifica connettività
+        self._verify_all_receivers()
+        
+        # Filtra ricevitori attivi (già fatto in _verify_all_receivers, ma qui ricreiamo la lista completa)
+        # Nota: _verify_all_receivers modifica self.rovers in-place rimuovendo quelli inattivi
+        self.receivers = [self.master] + self.rovers if self.master else self.rovers
+        
+        if not self.rovers:
+            print("Nessun Rover attivo disponibile. Esco.")
+            return
+
+        print(f"Caricati {len(self.receivers)} ricevitori attivi")
+
+        # Acquisisce posizione Master
+        if not self.master.has_coordinates():
+            if not self.acquire_master_position():
+                print("Impossibile proseguire senza posizione Master")
+                return
+        else:
+            print(f"Master già posizionato: {self.master.coords}")
+
+        # Processa Rover
+        self.process_rovers()
+
+        self.save_results()
+
+        print("\n=== Processo completato ===")
+        for rcv in self.receivers:
+            print(rcv)
+
+    def _verify_all_receivers(self):
+        """Verifica connettività di tutti i ricevitori prima di iniziare"""
         print("Verifica connettività ricevitori...")
         from utils.stream_verifier import StreamVerifier
         
@@ -116,7 +163,10 @@ class RTKManager:
              if proto in ['ERROR', 'TIMEOUT']:
                  print(f"⚠️  Master {self.master.serial_number} non raggiungibile ({proto}).")
                  if not self.master.has_coordinates():
-                     print("❌ Criticita: Master offline e senza coordinate. Impossibile procedere.")
+                     # Se master offline e senza coords, non possiamo procedere
+                     # (In realtà potremmo se vogliamo solo processare rovers, ma servono i dati master!)
+                     # TENSION: Robustness vs Flexibility
+                     # Blocchiamo tutto se il master è critico.
                      return
                  else:
                      print("⚠️  Uso coordinate Master memorizzate.")
@@ -145,27 +195,3 @@ class RTKManager:
             active_rovers.append(rover)
             
         self.rovers = active_rovers
-        self.receivers = [self.master] + self.rovers if self.master else self.rovers
-        
-        if not self.rovers:
-            print("Nessun Rover attivo disponibile. Esco.")
-            return
-
-        print(f"Caricati {len(self.receivers)} ricevitori attivi")
-
-        # Acquisisce posizione Master
-        if not self.master.has_coordinates():
-            if not self.acquire_master_position():
-                print("Impossibile proseguire senza posizione Master")
-                return
-        else:
-            print(f"Master già posizionato: {self.master.coords}")
-
-        # Processa Rover
-        self.process_rovers()
-
-        self.save_results()
-
-        print("\n=== Processo completato ===")
-        for rcv in self.receivers:
-            print(rcv)
