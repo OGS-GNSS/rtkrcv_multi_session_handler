@@ -79,6 +79,9 @@
                     <button id="btn-save-and-start" class="btn btn-success">
                         🚀 Salva e Avvia
                     </button>
+                    <button id="btn-stop" class="btn btn-danger" disabled>
+                        ⏹️ Stop
+                    </button>
                 </div>
             </div>
         </section>
@@ -242,7 +245,7 @@
                 port: 2222,
                 role: 'rover',
                 serial: serial,
-                timeout: 60
+                timeout: 120
             };
             renderTable();
         }
@@ -307,11 +310,15 @@
         async function startProcess() {
             const terminal = document.getElementById('terminal-output');
             const status = document.getElementById('process-status');
+            const btnStart = document.getElementById('btn-save-and-start');
+            const btnStop = document.getElementById('btn-stop');
 
             terminal.textContent = '';
             clearMap();  // Clear previous results
             status.textContent = 'Running...';
             status.className = 'badge bg-success';
+            btnStart.disabled = true;
+            btnStop.disabled = false;
 
             const res = await fetch('/api/start', { method: 'POST' });
             const result = await res.json();
@@ -326,6 +333,8 @@
                         status.textContent = 'Completed';
                         status.className = 'badge bg-info';
                         eventSource.close();
+                        btnStart.disabled = false;
+                        btnStop.disabled = true;
                         // Auto-refresh map after process completes
                         setTimeout(loadKmlOnMap, 500);
                     } else if (e.data.trim()) {
@@ -342,11 +351,32 @@
                     status.textContent = 'Error';
                     status.className = 'badge bg-danger';
                     eventSource.close();
+                    btnStart.disabled = false;
+                    btnStop.disabled = true;
                 };
             } else {
                 alert(result.message || 'Errore avvio processo');
                 status.textContent = 'Error';
                 status.className = 'badge bg-danger';
+                btnStart.disabled = false;
+                btnStop.disabled = true;
+            }
+        }
+
+        async function stopProcess() {
+            const status = document.getElementById('process-status');
+            const btnStart = document.getElementById('btn-save-and-start');
+            const btnStop = document.getElementById('btn-stop');
+
+            const res = await fetch('/api/stop', { method: 'POST' });
+            const result = await res.json();
+
+            if (result.status === 'stopped') {
+                status.textContent = 'Stopped';
+                status.className = 'badge bg-warning';
+                if (eventSource) eventSource.close();
+                btnStart.disabled = false;
+                btnStop.disabled = true;
             }
         }
 
@@ -366,6 +396,7 @@
             // Map starts empty - will be populated after process completion
 
             document.getElementById('btn-save-and-start').addEventListener('click', saveAndStart);
+            document.getElementById('btn-stop').addEventListener('click', stopProcess);
             document.getElementById('btn-add-receiver').addEventListener('click', addReceiver);
         });
     </script>

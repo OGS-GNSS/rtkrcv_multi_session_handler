@@ -137,9 +137,29 @@ def stream_output():
     return response
 
 
+@app.route('/api/stop', methods=['POST'])
+def stop_process():
+    """Terminate the running subprocess."""
+    global current_process
+    
+    with process_lock:
+        if current_process and current_process.poll() is None:
+            current_process.terminate()
+            try:
+                current_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                current_process.kill()
+            process_queue.put(None)  # Signal end of stream
+            return jsonify({"status": "stopped"})
+        else:
+            return jsonify({"status": "error", "message": "No process running"}), 400
+
+
 @app.route('/api/kml')
 def get_latest_kml():
-    """Return the most recent KML file content."""
+    """Return the most recent KML file content with timestamp filename."""
+    from datetime import datetime
+    
     kml_files = glob.glob(str(OUTPUT_PATH / "*.kml"))
     if not kml_files:
         return jsonify({"status": "error", "message": "No KML files found"}), 404
@@ -150,7 +170,13 @@ def get_latest_kml():
     with open(latest_kml, 'r') as f:
         content = f.read()
     
-    return Response(content, mimetype='application/vnd.google-earth.kml+xml')
+    # Generate timestamp filename
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{timestamp}.kml"
+    
+    response = Response(content, mimetype='application/vnd.google-earth.kml+xml')
+    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 
 @app.route('/api/kml/json')
