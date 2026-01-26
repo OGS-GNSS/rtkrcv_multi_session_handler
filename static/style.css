@@ -4,16 +4,18 @@
  */
 
 :root {
-    --primary: #007bff;
-    --terminal-bg: #1b0047;
-    --terminal-text: #ff9292;
-    --card-bg: #1a1a2e;
-    --border-color: #374151;
+    --primary: #3B82F6;
+    --background: #0F172A;
+    --terminal-bg: #1E293B;
+    --terminal-text: #F8FAFC;
+    --card-bg: #1E293B;
+    --border-color: #334155;
 }
 
 /* Typography */
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--background) !important;
 }
 
 /* Map Container */
@@ -45,8 +47,7 @@ body {
     color: var(--terminal-text);
     padding: 1rem;
     margin: 0;
-    min-height: 250px;
-    max-height: 400px;
+    height: 300px;
     overflow-y: auto;
     border-radius: 0 0 0.375rem 0.375rem;
     white-space: pre-wrap;
@@ -78,17 +79,17 @@ body {
 
 .table-dark input.form-control:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
 }
 
 /* Buttons */
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary) 0%, #0056b3 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, #2563EB 100%);
     border: none;
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #0069d9 0%, #004085 100%);
+    background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
     transform: translateY(-1px);
     transition: all 0.2s ease;
 }
@@ -141,7 +142,7 @@ body {
 
 /* Header styling */
 header h1 .text-primary {
-    background: linear-gradient(135deg, var(--primary), #00d4ff);
+    background: linear-gradient(135deg, var(--primary), #60A5FA);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
