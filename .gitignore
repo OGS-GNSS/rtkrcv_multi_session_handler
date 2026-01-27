@@ -1,6 +1,10 @@
 lib/
 tmp/
 output/
+directives/
+gemini.md
+brandguidelines.md
+
 rtkrcv.nav
 rtkrcv_*.trace
 
