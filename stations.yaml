@@ -1,12 +1,24 @@
 receivers:
+  LZER0MOB-2409-0013:
+    ip: 10.55.66.113
+    port: 2222
+    role: rover
+    serial: LZER0MOB-2409-0013
+    timeout: 90
+  LZER0MOB-2409-0017:
+    ip: 10.55.66.117
+    port: 2222
+    role: rover
+    serial: LZER0MOB-2409-0017
+    timeout: 90
   UDI2-L0:
     ip: 10.158.0.190
     port: 2222
-    role: rover
+    role: master
     serial: UDI2-L0
-    timeout: 150
   u2l0:
     ip: 10.158.0.163
     port: 2222
-    role: master
+    role: rover
     serial: u2l0
+    timeout: 90
