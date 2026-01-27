@@ -1,9 +1,0 @@
-Obiettivo: Gestire la configurazione dei ricevitori e l'avvio del processo.
-Regole per stations.yaml:
-1. Leggi il file stations.yaml esistente per popolare la tabella iniziale.
-2. Quando l'utente salva, sovrascrivi stations.yaml mantenendo la struttura esatta.
-3. Vincolo Master: Nella UI, la checkbox "Master" deve essere mutuamente esclusiva (radio button behavior). Solo una stazione può essere master.
-4. Timeout: Il campo timeout è visibile/editabile solo se il ricevitore NON è master.
-Esecuzione Processo:
-1. Al click su "Avvia", lancia python main.py come sottoprocesso (subprocess).
-2. Streaming Output: Cattura stdout e stderr in tempo reale e inviali al frontend (usa WebSocket o Server-Sent Events) per mostrarli nel rettangolo nero stile terminale.
