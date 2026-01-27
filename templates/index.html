@@ -232,7 +232,7 @@
                     delete config.timeout; // Master doesn't have timeout
                 } else {
                     config.role = 'rover';
-                    if (!config.timeout) config.timeout = 60;
+                    if (!config.timeout) config.timeout = 150;
                 }
             }
             renderTable();
@@ -245,7 +245,7 @@
                 port: 2222,
                 role: 'rover',
                 serial: serial,
-                timeout: 120
+                timeout: 150
             };
             renderTable();
         }

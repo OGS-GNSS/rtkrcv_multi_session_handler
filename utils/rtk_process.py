@@ -71,15 +71,18 @@ class RTKProcess:
             self.stop()
             return False
 
-    def wait_for_fix(self, timeout: int = 300) -> Optional[Dict]:
+    def wait_for_fix(self, timeout: int = 300, median_samples: int = 3) -> Optional[Dict]:
         """
         Attende che venga trovata una soluzione.
-        Restituisce la soluzione FIX non appena disponibile.
+        Raccoglie N soluzioni FIX (default 3) e restituisce quella con coordinate mediane.
         Se scade il timeout e c'è una soluzione FLOAT, restituisce quella.
+        
+        Il filtro mediano riduce l'impatto di eventuali outliers nella prima acquisizione.
         """
         start_time = time.time()
         last_waiting_msg = 0
         best_solution = None
+        fix_solutions = []  # Accumula soluzioni FIX per filtro mediano
         
         try:
             while time.time() - start_time < timeout:
@@ -102,14 +105,25 @@ class RTKProcess:
                     if sol:
                         quality = sol.get('quality', 0)
                         q_str = "FIX" if quality == 1 else "FLOAT" if quality == 2 else f"Q={quality}"
-                        status_line = f"Soluzione corrente: {sol['lat']:.8f}, {sol['lon']:.8f}, {sol['alt']:.3f} ({q_str}) - Time: {remaining:.0f}s"
+                        
+                        # Mostra progresso raccolta campioni FIX
+                        fix_progress = f" [{len(fix_solutions)}/{median_samples}]" if fix_solutions else ""
+                        status_line = f"Soluzione corrente: {sol['lat']:.8f}, {sol['lon']:.8f}, {sol['alt']:.3f} ({q_str}{fix_progress}) - Time: {remaining:.0f}s"
 
-                        # Se abbiamo FIX (Q=1), ritorniamo subito
+                        # Se abbiamo FIX (Q=1), accumula per filtro mediano
                         if quality == 1:
-                            # Print final status clearly before returning
-                            if self.lines_printed > 0:
-                                print("\033[A\033[K" * self.lines_printed, end="")
-                            return sol
+                            # Evita duplicati (stesso timestamp/coordinate identiche)
+                            if not fix_solutions or self._is_new_solution(sol, fix_solutions[-1]):
+                                fix_solutions.append(sol)
+                                print(f"  ✓ Campione FIX #{len(fix_solutions)} raccolto")
+                            
+                            # Se abbiamo abbastanza campioni, calcola mediana
+                            if len(fix_solutions) >= median_samples:
+                                if self.lines_printed > 0:
+                                    print("\033[A\033[K" * self.lines_printed, end="")
+                                median_sol = self._compute_median_solution(fix_solutions)
+                                print(f"  📊 Soluzione mediana calcolata da {len(fix_solutions)} campioni")
+                                return median_sol
                         
                         # Se abbiamo FLOAT (Q=2), salviamolo come fallback
                         if quality == 2:
@@ -283,3 +297,32 @@ class RTKProcess:
                     print(f"  {line.rstrip()}")
         except Exception as e:
             print(f"Errore analisi trace: {e}")
+
+    def _is_new_solution(self, sol: Dict, prev_sol: Dict) -> bool:
+        """Verifica se la soluzione è diversa dalla precedente (evita duplicati)"""
+        # Considera nuova se le coordinate differiscono oltre una soglia minima
+        threshold = 1e-9  # ~0.1mm, evita duplicati esatti
+        return (
+            abs(sol['lat'] - prev_sol['lat']) > threshold or
+            abs(sol['lon'] - prev_sol['lon']) > threshold or
+            abs(sol['alt'] - prev_sol['alt']) > 0.001  # 1mm per altitudine
+        )
+
+    def _compute_median_solution(self, solutions: List[Dict]) -> Dict:
+        """
+        Calcola la soluzione con coordinate mediane.
+        Per ogni coordinata (lat, lon, alt), prende il valore mediano.
+        Restituisce una copia della soluzione con coordinate mediane.
+        """
+        import statistics
+        
+        lats = [s['lat'] for s in solutions]
+        lons = [s['lon'] for s in solutions]
+        alts = [s['alt'] for s in solutions]
+        
+        median_sol = solutions[0].copy()  # Mantieni quality e altri campi
+        median_sol['lat'] = statistics.median(lats)
+        median_sol['lon'] = statistics.median(lons)
+        median_sol['alt'] = statistics.median(alts)
+        
+        return median_sol
