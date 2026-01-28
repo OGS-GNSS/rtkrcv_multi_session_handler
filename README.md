@@ -56,6 +56,19 @@ Il programma:
 
 ---
 
+## Interfaccia Web
+
+Per avviare l'interfaccia web eseguire:
+
+```bash
+python app.py
+```
+
+a questo punto collegarsi con un browser a `http://localhost:5000`
+da qui potremo aggiungere/rimuovere/configurare le stazioni ed avviare il processo 
+
+---
+
 ## Documentazione Completa
 
 Per dettagli su:
