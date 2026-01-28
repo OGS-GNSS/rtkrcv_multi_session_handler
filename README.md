@@ -1,102 +1,87 @@
 # RTK Multi-Session Handler
 
+**RTK Multi-Session Handler** è un orchestratore Python progettato per automatizzare l'acquisizione di **posizioni GNSS precise** (accuratezza centimetrica) da più ricevitori distribuiti, utilizzando la tecnica RTK (Real-Time Kinematic).
 
-**RTK Multi-Session Handler** è un orchestratore Python progettato per ottenere **posizioni GNSS precise** (accuratezza centimetrica) da più ricevitori **rover**, utilizzando un **ricevitore master** come riferimento.
-Il programma coordina automaticamente le sessioni RTK (Real-Time Kinematic), gestendo lo stream NMEA del master, l’elaborazione dei rover tramite `rtkrcv` (di RTKLIB) e la scrittura dei risultati in un file di configurazione YAML.
+Il sistema gestisce automaticamente:
+*   Acquisizione posizione del **Master** (reference station)
+*   Coordinamento sessioni RTK per i **Rover**
+*   Generazione output **KML** per visualizzazione su Google Earth
+*   Interfaccia Web per controllo e monitoraggio in tempo reale
 
---- 
+---
 
-## 🐳 Quick Start con Docker.
+## 🚀 Quick Start con Docker
 
-Il modo più semplice per avviare l'applicazione senza installare dipendenze è usare Docker.
+Il modo più semplice e veloce per utilizzare l'applicazione è attraverso Docker.
 
 ### Prerequisiti
-* Docker installato sulla macchina.
+*   **Docker** installato sulla macchina host.
 
-### Avvio rapido
-Esegui questo comando nel terminale:
+### Avvio
+Esegui il seguente comando nel terminale:
 
 ```bash
-docker pull sgalvi/rtkrcv-multisession:v1
 docker run -p 5000:5000 sgalvi/rtkrcv-multisession:v1
 ```
 
+Una volta avviato il container, l'applicazione sarà accessibile via browser.
+
 ---
 
-## Installazione manuale
+## 🖥️ Interfaccia Web
+
+Apri il browser all'indirizzo **[http://localhost:5000](http://localhost:5000)**.
+
+Dalla dashboard potrai:
+1.  **Configurare le Stazioni**: Aggiungere, rimuovere e modificare i parametri dei ricevitori (Master/Rover) tramite un editor visuale integrato.
+2.  **Controllare il Processo**: Avviare e fermare l'elaborazione con un click.
+3.  **Monitorare in Real-Time**: Visualizzare i log di stato e il progresso delle soluzioni (FIX/FLOAT) nel terminale integrato.
+4.  **Mappa Interattiva**: Visualizzare istantaneamente le posizioni acquisite su mappa.
+5.  **Export Dati**: Scaricare i file KML generati direttamente dall'interfaccia.
+
+> ℹ️ **Nota**: La configurazione viene salvata automaticamente nel file `stations.yaml`.
+
+---
+
+## 🛠️ Installazione Manuale
+
+Se preferisci eseguire l'applicazione nativamente (es. per sviluppo):
 
 ### Requisiti
+*   **Python 3.7+**
+*   **RTKLIB** (con binario `rtkrcv` compilato)
+*   Accesso di rete ai ricevitori GNSS
 
-Per il corretto funzionamento è necessario:
-
-1. **Python 3.7 o superiore**
-2. **RTKLIB** (con il binario `rtkrcv` compilato)
-3. Una rete TCP/IP che permetta la comunicazione tra i ricevitori
-
----
-
-### Installazione
-
-#### Compilare RTKRCV
-
-```bash
-git clone --recurse-submodules [repository_url]
-cd rtklib/app/rtkrcv
-make
-mkdir -p ../../../lib
-cp rtkrcv ../../../lib/
-```
-
-Il binario `rtkrcv` deve trovarsi in `./lib/rtkrcv`.
-
-### 2️⃣ Installare le dipendenze Python
-
-Dal percorso principale del progetto:
-
-```bash
-pip install -r requirements.txt
-```
+### Setup
+1.  Clona il repository con i sottomoduli:
+    ```bash
+    git clone --recurse-submodules <repository_url>
+    ```
+2.  Compila RTKLIB:
+    ```bash
+    cd RTKLIB/app/consapp/rtkrcv/gcc/ && make
+    mv rtkrcv /project_path/rtklib/
+    rm -r RTKLIB
+    ```
+3.  Installa le dipendenze Python:
+    ```bash
+    pip install -r requirements.txt
+    ```
+4.  Avvia l'interfaccia web:
+    ```bash
+    python app.py
+    ```
 
 ---
 
-## Utilizzo
+## 📚 Documentazione
 
-Eseguire:
+Per una guida dettagliata su:
+*   Configurazione avanzata dei ricevitori (`stations.yaml`)
+*   Dettagli sull'architettura del sistema
+*   Risoluzione problemi (Troubleshooting)
+*   Specifiche API
 
-```bash
-python main.py
-```
+Consulta la documentazione completa:
 
-Il programma:
-
-1. Legge la configurazione dei ricevitori da `stations.yaml`
-2. Acquisisce la posizione del **Master** tramite stream NMEA
-3. Lancia processi `rtkrcv` per ogni **Rover** per calcolare le posizioni precise
-4. Genera automaticamente un file KML nella directory `output/`
-
----
-
-## Interfaccia Web
-
-Per avviare l'interfaccia web eseguire:
-
-```bash
-python app.py
-```
-
-a questo punto collegarsi con un browser a `http://localhost:5000`
-da qui potremo aggiungere/rimuovere/configurare le stazioni ed avviare il processo 
-
----
-
-## Documentazione Completa
-
-Per dettagli su:
-
-* configurazione dei ricevitori
-* formati dei file YAML
-* architettura del sistema
-* troubleshooting
-
-consulta -> **[DOCUMENTATION.md](DOCUMENTATION.md)**
-
+👉 **[DOCUMENTATION.md](DOCUMENTATION.md)**
