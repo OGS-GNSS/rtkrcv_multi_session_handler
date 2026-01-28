@@ -17,7 +17,8 @@ Il modo più semplice per avviare l'applicazione senza installare dipendenze è 
 Esegui questo comando nel terminale:
 
 ```bash
-docker run -p 5000:5000 --restart unless-stopped sgalvi/rtkrcv-multisession:latest
+docker pull sgalvi/rtkrcv-multisession:v1
+docker run -p 5000:5000 sgalvi/rtkrcv-multisession:v1
 ```
 
 ---
