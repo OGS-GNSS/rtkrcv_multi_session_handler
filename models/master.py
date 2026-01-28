@@ -54,7 +54,7 @@ class Master(Ricevitore):
                                 coords = parse_gga(line)
                                 if coords:
                                     samples.append(coords)
-                                    print(f"Campione {len(samples)}/10: {coords['lat']:.6f}, {coords['lon']:.6f}, {coords['alt']:.2f}", end='\r')
+                                    print(f"[MASTER_STATUS] Campione {len(samples)}/10: {coords['lat']:.6f}, {coords['lon']:.6f}, {coords['alt']:.2f}", flush=True)
                                     
                     except socket.timeout:
                         break

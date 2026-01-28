@@ -182,7 +182,7 @@ class RTKManager:
             print(f"[{proto}]")
             
             if proto in ['ERROR', 'TIMEOUT']:
-                 print(f"⚠️  Rover {rover.serial_number} non raggiungibile. Skippo.")
+                 print(f"⚠️  Rover {rover.serial_number} non raggiungibile ({proto}). Skippo.", flush=True)
                  continue
             
             if proto == 'SSH':

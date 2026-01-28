@@ -14,11 +14,11 @@ receivers:
   UDI2-L0:
     ip: 10.158.0.190
     port: 2222
-    role: master
+    role: rover
     serial: UDI2-L0
+    timeout: 150
   u2l0:
     ip: 10.158.0.163
     port: 2222
-    role: rover
+    role: master
     serial: u2l0
-    timeout: 90

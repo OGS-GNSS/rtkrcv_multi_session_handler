@@ -131,7 +131,8 @@ class RTKProcess:
     def _update_status(self, status_line: str):
         """Aggiorna lo status su una singola riga (sovrascrive)"""
         if status_line != self.last_status_line:
-            print(f"\r{status_line:<80}", end='', flush=True)
+            # Use structured logging with newline so it's flushable by app.py
+            print(f"[RTK_STATUS] {status_line}", flush=True)
             self.last_status_line = status_line
 
     def stop(self, keep_logs_on_success: bool = False):

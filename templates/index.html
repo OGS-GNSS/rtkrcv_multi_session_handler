@@ -66,6 +66,7 @@
                                     <th>Port</th>
                                     <th>Role</th>
                                     <th>Timeout (s)</th>
+                                    <th>Stato</th>
                                     <th>Azioni</th>
                                 </tr>
                             </thead>
@@ -113,6 +114,7 @@
         let receiversData = { receivers: {} };
         let map = null;
         let eventSource = null;
+        let currentRoverSerial = null; // Track which rover is being processed
 
         // =========================================
         // Map Initialization
@@ -214,6 +216,9 @@
                                ${isMaster ? 'disabled style="opacity: 0.3"' : ''}>
                     </td>
                     <td>
+                        <span class="badge bg-secondary status-badge" id="status-${serial}"></span>
+                    </td>
+                    <td>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteReceiver('${serial}')">
                             🗑️
                         </button>
@@ -221,6 +226,14 @@
                 `;
 
                 tbody.appendChild(row);
+            }
+        }
+
+        function setStatus(serial, status, colorClass = 'bg-secondary') {
+            const badge = document.getElementById(`status-${serial}`);
+            if (badge) {
+                badge.textContent = status;
+                badge.className = `badge ${colorClass} status-badge`;
             }
         }
 
@@ -265,6 +278,7 @@
                 const port = parseInt(row.querySelector('[data-field="port"]').value);
                 const isMaster = row.querySelector('input[type="radio"]').checked;
                 const timeout = parseInt(row.querySelector('[data-field="timeout"]').value);
+                // Status column is skipped as it's not an input
 
                 newData.receivers[serial] = {
                     ip: ip,
@@ -320,6 +334,12 @@
             btnStart.disabled = true;
             btnStop.disabled = false;
 
+            // Reset status badges
+            document.querySelectorAll('.status-badge').forEach(el => {
+                el.textContent = 'READY';
+                el.className = 'badge bg-info text-dark status-badge';
+            });
+
             const res = await fetch('/api/start', { method: 'POST' });
             const result = await res.json();
 
@@ -337,13 +357,77 @@
                         btnStop.disabled = true;
                         // Auto-refresh map after process completes
                         setTimeout(loadKmlOnMap, 500);
+                        currentRoverSerial = null;
+
                     } else if (e.data.trim()) {
-                        // Preserve newlines from the output
-                        terminal.textContent += e.data;
-                        if (!e.data.endsWith('\n')) {
-                            terminal.textContent += '\n';
+                        const line = e.data.trim();
+                        let showInTerminal = true;
+
+                        // --- Status Parsing Logic ---
+
+                        // 1. Identify Processing Rover
+                        const roverMatch = line.match(/Processing Rover (\w+)\.\.\./);
+                        if (roverMatch) {
+                            currentRoverSerial = roverMatch[1];
+                            setStatus(currentRoverSerial, 'PEND.', 'bg-warning text-dark');
                         }
-                        terminal.scrollTop = terminal.scrollHeight;
+
+                        // 2. Identify RTK Status (FLOAT/FIX)
+                        // Log format: [RTK_STATUS] Soluzione: ... (FIX [1/3]) ...
+                        if (line.startsWith('[RTK_STATUS]')) {
+                            showInTerminal = false; // Hide from terminal
+                            if (currentRoverSerial) {
+                                if (line.includes('FIX')) {
+                                    setStatus(currentRoverSerial, 'FIX  ', 'bg-success');
+                                } else if (line.includes('FLOAT')) {
+                                    setStatus(currentRoverSerial, 'FLOAT', 'bg-warning text-dark');
+                                }
+                            }
+                        }
+
+                        // 3. Identify Master Status
+                        if (line.includes('Acquisizione posizione Master')) {
+                            // Find master serial from data
+                            const masterSerial = Object.values(receiversData.receivers).find(r => r.role === 'master')?.serial;
+                            if (masterSerial) setStatus(masterSerial, 'ACQ..', 'bg-info text-dark');
+                        }
+
+                        // Master samples progress
+                        if (line.startsWith('[MASTER_STATUS]')) {
+                            showInTerminal = false; // Hide
+                            // Optional: update master status with count if needed, but 'Acquiring' is enough
+                        }
+
+                        if (line.includes('Master posizionato')) {
+                            const masterSerial = Object.values(receiversData.receivers).find(r => r.role === 'master')?.serial;
+                            if (masterSerial) setStatus(masterSerial, 'MSTR ', 'bg-primary');
+                        }
+
+                        // 4. Identify Errors
+                        if (line.includes('non raggiungibile') || line.includes('ERRORE') || line.includes('TIMEOUT')) {
+                            // Try to find serial in line
+                            const serialMatch = line.match(/(Master|Rover) (.+?) /); // Non-greedy match for serial
+                            if (serialMatch) {
+                                const serial = serialMatch[2];
+                                if (line.includes('TIMEOUT')) {
+                                    setStatus(serial, 'TMOUT', 'bg-danger');
+                                } else {
+                                    setStatus(serial, 'ERROR', 'bg-danger');
+                                }
+                            } else if (currentRoverSerial) {
+                                setStatus(currentRoverSerial, 'ERR  ', 'bg-danger');
+                            }
+                        }
+
+                        // --- End Status Parsing ---
+
+                        if (showInTerminal) {
+                            terminal.textContent += e.data;
+                            if (!e.data.endsWith('\n')) {
+                                terminal.textContent += '\n';
+                            }
+                            terminal.scrollTop = terminal.scrollHeight;
+                        }
                     }
                 };
 
