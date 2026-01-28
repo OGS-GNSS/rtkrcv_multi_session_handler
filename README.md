@@ -8,9 +8,9 @@ Il programma coordina automaticamente le sessioni RTK (Real-Time Kinematic), ges
 
 ## 🐳 Quick Start con Docker.
 
-```markdown
+
 [![Docker Image](https://img.shields.io/docker/pulls/TUO_USERNAME/rtkrcv-multisession.svg)](https://hub.docker.com/r/TUO_USERNAME/rtkrcv-multisession)
-```
+
 
 Il modo più semplice per avviare l'applicazione senza installare dipendenze è usare Docker.
 
