@@ -1,4 +1,5 @@
 # RTK Multi-Session Handler
+```markdown
 
 **RTK Multi-Session Handler** è un orchestratore Python progettato per ottenere **posizioni GNSS precise** (accuratezza centimetrica) da più ricevitori **rover**, utilizzando un **ricevitore master** come riferimento.
 Il programma coordina automaticamente le sessioni RTK (Real-Time Kinematic), gestendo lo stream NMEA del master, l’elaborazione dei rover tramite `rtkrcv` (di RTKLIB) e la scrittura dei risultati in un file di configurazione YAML.
@@ -6,6 +7,8 @@ Il programma coordina automaticamente le sessioni RTK (Real-Time Kinematic), ges
 --- 
 
 ## 🐳 Quick Start con Docker
+[![Docker Image](https://img.shields.io/docker/pulls/TUO_USERNAME/rtkrcv-multisession.svg)](https://hub.docker.com/r/TUO_USERNAME/rtkrcv-multisession)
+
 
 Il modo più semplice per avviare l'applicazione senza installare dipendenze è usare Docker.
 
