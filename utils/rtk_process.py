@@ -36,7 +36,7 @@ class RTKProcess:
             rtklib_path_abs = self.rtklib_path if self.rtklib_path.is_absolute() else Path.cwd() / self.rtklib_path
             config_file_abs = self.config_file if self.config_file.is_absolute() else Path.cwd() / self.config_file
 
-            print(f"Comando: {rtklib_path_abs} -nc -t 2 -o {config_file_abs}")
+            print(f"Comando: {rtklib_path_abs} -nc -t 2 -o {config_file_abs}", flush=True)
 
             self.stdout_fd = open(self.stdout_file, 'w', buffering=1)
             self.stderr_fd = open(self.stderr_file, 'w', buffering=1)
@@ -51,12 +51,12 @@ class RTKProcess:
                 close_fds=False
             )
             
-            print(f"RTKRCV avviato (PID: {self.process.pid})")
-            print(f"File soluzione: {self.solution_file}")
+            print(f"RTKRCV avviato (PID: {self.process.pid})", flush=True)
+            print(f"File soluzione: {self.solution_file}", flush=True)
             
             return True
         except Exception as e:
-            print(f"Errore avvio RTKRCV: {e}")
+            print(f"Errore avvio RTKRCV: {e}", flush=True)
             self.stop()
             return False
 
@@ -95,12 +95,12 @@ class RTKProcess:
                         if quality == 1:
                             if not fix_solutions or self._is_new_solution(sol, fix_solutions[-1]):
                                 fix_solutions.append(sol)
-                                print(f"\n  ✓ Campione FIX #{len(fix_solutions)} raccolto")
+                                print(f"\n  ✓ Campione FIX #{len(fix_solutions)} raccolto", flush=True)
                             
                             if len(fix_solutions) >= median_samples:
-                                print()  # Newline finale
+                                print(flush=True)  # Newline finale
                                 median_sol = self._compute_median_solution(fix_solutions)
-                                print(f"  📊 Soluzione mediana da {len(fix_solutions)} campioni")
+                                print(f"  📊 Soluzione mediana da {len(fix_solutions)} campioni", flush=True)
                                 return median_sol
                         
                         # FLOAT come fallback
@@ -111,21 +111,21 @@ class RTKProcess:
 
                 # Check process status
                 if self.process.poll() is not None:
-                    print(f"\nRTKRCV terminato inaspettatamente")
+                    print(f"\nRTKRCV terminato inaspettatamente", flush=True)
                     return best_solution
                     
                 time.sleep(1)
             
             # Timeout scaduto
-            print()  # Newline finale
+            print(flush=True)  # Newline finale
             if best_solution:
-                print(f"Timeout scaduto. Accetto soluzione FLOAT.")
+                print(f"Timeout scaduto. Accetto soluzione FLOAT.", flush=True)
                 return best_solution
                 
             return None
             
         except KeyboardInterrupt:
-            print("\nInterrotto dall'utente")
+            print("\nInterrotto dall'utente", flush=True)
             return best_solution
 
     def _update_status(self, status_line: str):

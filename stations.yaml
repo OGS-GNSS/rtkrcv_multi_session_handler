@@ -1,10 +1,4 @@
 receivers:
-  LZER0MOB-2409-0013:
-    ip: 10.55.66.113
-    port: 2222
-    role: rover
-    serial: LZER0MOB-2409-0013
-    timeout: 90
   LZER0MOB-2409-0017:
     ip: 10.55.66.117
     port: 2222

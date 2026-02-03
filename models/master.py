@@ -21,7 +21,7 @@ class Master(Ricevitore):
         start_time = time.time()
         samples = []
         
-        print(f"Acquisizione posizione Master (target: 10 campioni)...")
+        print(f"Acquisizione posizione Master (target: 10 campioni)...", flush=True)
         
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -29,10 +29,10 @@ class Master(Ricevitore):
                 try:
                     s.connect((self.ip_address, self.port))
                 except ConnectionRefusedError:
-                    print(f"Errore lettura NMEA da Master: Connection refused")
+                    print(f"Errore lettura NMEA da Master: Connection refused", flush=True)
                     return False
                 except Exception as e:
-                    print(f"Errore connessione Master: {e}")
+                    print(f"Errore connessione Master: {e}", flush=True)
                     return False
 
                 buffer = ""
@@ -62,15 +62,15 @@ class Master(Ricevitore):
                         break
         
         except Exception as e:
-            print(f"Errore inatteso Master: {e}")
+            print(f"Errore inatteso Master: {e}", flush=True)
             return False
 
         if not samples:
-             print("\nNessun campione valido acquisito da Master.")
+             print("\nNessun campione valido acquisito da Master.", flush=True)
              return False
              
         # Calcolo mediana
-        print(f"\nCalcolo mediana su {len(samples)} campioni...")
+        print(f"\nCalcolo mediana su {len(samples)} campioni...", flush=True)
         
         lats = [s['lat'] for s in samples]
         lons = [s['lon'] for s in samples]

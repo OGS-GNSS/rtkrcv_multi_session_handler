@@ -22,7 +22,7 @@ class Rover(Ricevitore):
         bilanciando la necessità di avere un dato con la sua qualità.
         """
         if not master.has_coordinates():
-            print(f"Master non ha coordinate impostate")
+            print(f"Master non ha coordinate impostate", flush=True)
             return False
 
         output_dir = Path("tmp")
@@ -41,17 +41,17 @@ class Rover(Ricevitore):
         )
         
         if not config_file.exists():
-            print(f"ERRORE: File di configurazione non creato: {config_file}")
+            print(f"ERRORE: File di configurazione non creato: {config_file}", flush=True)
             return False
             
-        print(f"File di configurazione creato: {config_file}")
+        print(f"File di configurazione creato: {config_file}", flush=True)
         
         rtk_process = RTKProcess(config_file, rtklib_path, output_dir=output_dir)
         
         if not rtk_process.start():
             return False
             
-        print(f"\nAttendo soluzione FIX (timeout: {self.timeout}s)...")
+        print(f"\nAttendo soluzione FIX (timeout: {self.timeout}s)...", flush=True)
         result = rtk_process.wait_for_fix(self.timeout)
         
         success = False
@@ -59,7 +59,7 @@ class Rover(Ricevitore):
             self._apply_solution(result, master.serial_number)
             success = True
         else:
-            print(f"Nessuna soluzione valida trovata nel tempo limite.")
+            print(f"Nessuna soluzione valida trovata nel tempo limite.", flush=True)
             
         rtk_process.stop(keep_logs_on_success=not success)
         return success
@@ -81,4 +81,4 @@ class Rover(Ricevitore):
         msg = f"Rover {self.serial_number} posizionato ({status_str}): Lat={coords['lat']}, Lon={coords['lon']}, Alt={coords['alt']}"
         if quality != 1:
             msg += " (⚠️ Status non optimal)"
-        print(msg)
+        print(msg, flush=True)

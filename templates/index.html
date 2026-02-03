@@ -371,10 +371,9 @@
                             setStatus(currentRoverSerial, 'PEND.', 'bg-warning text-dark');
                         }
 
-                        // 2. Identify RTK Status (FLOAT/FIX)
+                        // 2. Identify RTK Status (FLOAT/FIX) - show in terminal
                         // Log format: [RTK_STATUS] Soluzione: ... (FIX [1/3]) ...
                         if (line.startsWith('[RTK_STATUS]')) {
-                            showInTerminal = false; // Hide from terminal
                             if (currentRoverSerial) {
                                 if (line.includes('FIX')) {
                                     setStatus(currentRoverSerial, 'FIX  ', 'bg-success');
@@ -391,10 +390,14 @@
                             if (masterSerial) setStatus(masterSerial, 'ACQ..', 'bg-info text-dark');
                         }
 
-                        // Master samples progress
+                        // Master samples progress - show in terminal
                         if (line.startsWith('[MASTER_STATUS]')) {
-                            showInTerminal = false; // Hide
-                            // Optional: update master status with count if needed, but 'Acquiring' is enough
+                            // Update master status with sample count
+                            const masterSerial = Object.values(receiversData.receivers).find(r => r.role === 'master')?.serial;
+                            const sampleMatch = line.match(/Campione (\d+)\/10/);
+                            if (masterSerial && sampleMatch) {
+                                setStatus(masterSerial, `ACQ ${sampleMatch[1]}/10`, 'bg-info text-dark');
+                            }
                         }
 
                         if (line.includes('Master posizionato')) {

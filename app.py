@@ -96,16 +96,55 @@ def start_process():
             env=env
         )
         
-        # Start thread to read output line by line
+        # Start thread to read output using select for non-blocking reads
         def read_output():
+            import select
+            import os
+            
+            fd = current_process.stdout.fileno()
+            buffer = ""
+            
             try:
-                for line in iter(current_process.stdout.readline, ''):
-                    if line:
-                        process_queue.put(line)
+                while True:
+                    # Use select with timeout to avoid blocking
+                    readable, _, _ = select.select([fd], [], [], 0.1)
+                    
+                    if readable:
+                        try:
+                            chunk = os.read(fd, 4096)
+                            if not chunk:
+                                # EOF reached
+                                break
+                            buffer += chunk.decode('utf-8', errors='replace')
+                            
+                            # Process complete lines
+                            while '\n' in buffer:
+                                line, buffer = buffer.split('\n', 1)
+                                if line:
+                                    process_queue.put(line + '\n')
+                        except OSError:
+                            break
+                    
+                    # Check if process has terminated
                     if current_process.poll() is not None:
+                        # Read any remaining data
+                        try:
+                            remaining = os.read(fd, 4096)
+                            if remaining:
+                                buffer += remaining.decode('utf-8', errors='replace')
+                        except OSError:
+                            pass
                         break
+                
+                # Flush remaining buffer
+                if buffer.strip():
+                    process_queue.put(buffer + '\n')
+                    
             finally:
-                current_process.stdout.close()
+                try:
+                    current_process.stdout.close()
+                except:
+                    pass
                 process_queue.put(None)  # Signal end of stream
         
         thread = threading.Thread(target=read_output, daemon=True)

@@ -56,17 +56,17 @@ class RTKManager:
     def acquire_master_position(self) -> bool:
         """Acquisisce posizione del Master da stream NMEA"""
         if not self.master:
-            print("Nessun Master configurato")
+            print("Nessun Master configurato", flush=True)
             return False
 
-        print(f"Acquisizione posizione Master da stream NMEA...")
+        print(f"Acquisizione posizione Master da stream NMEA...", flush=True)
         success = self.master.read_nmea_position()
 
         if success:
-            print(f"Master posizionato: {self.master.coords}")
+            print(f"Master posizionato: {self.master.coords}", flush=True)
             # Salvataggio solo alla fine
         else:
-            print("Impossibile acquisire posizione Master")
+            print("Impossibile acquisire posizione Master", flush=True)
 
         return success
 
@@ -81,17 +81,17 @@ class RTKManager:
         questo sarebbe un collo di bottiglia critico.
         """
         if not self.master or not self.master.has_coordinates():
-            print("Master non ha coordinate valide")
+            print("Master non ha coordinate valide", flush=True)
             return
 
         for rover in self.rovers:
-            print(f"\\nProcessing Rover {rover.serial_number}...")
+            print(f"\\nProcessing Rover {rover.serial_number}...", flush=True)
             success = rover.process_with_rtkrcv(self.master, self.rtklib_path)
 
             if success:
-                print(f"Rover {rover.serial_number} posizionato: {rover.coords}")
+                print(f"Rover {rover.serial_number} posizionato: {rover.coords}", flush=True)
             else:
-                print(f"Impossibile posizionare Rover {rover.serial_number}")
+                print(f"Impossibile posizionare Rover {rover.serial_number}", flush=True)
 
     def save_results(self) -> None:
         """
@@ -114,7 +114,7 @@ class RTKManager:
 
     def run(self) -> None:
         """Esegue il workflow completo"""
-        print("=== RTK Manager ===\n")
+        print("=== RTK Manager ===\n", flush=True)
 
         # Carica configurazione
         self.load_receivers()
@@ -127,41 +127,41 @@ class RTKManager:
         self.receivers = [self.master] + self.rovers if self.master else self.rovers
         
         if not self.rovers:
-            print("Nessun Rover attivo disponibile. Esco.")
+            print("Nessun Rover attivo disponibile. Esco.", flush=True)
             return
 
-        print(f"Caricati {len(self.receivers)} ricevitori attivi")
+        print(f"Caricati {len(self.receivers)} ricevitori attivi", flush=True)
 
         # Acquisisce posizione Master
         if not self.master.has_coordinates():
             if not self.acquire_master_position():
-                print("Impossibile proseguire senza posizione Master")
+                print("Impossibile proseguire senza posizione Master", flush=True)
                 return
         else:
-            print(f"Master già posizionato: {self.master.coords}")
+            print(f"Master già posizionato: {self.master.coords}", flush=True)
 
         # Processa Rover
         self.process_rovers()
 
         self.save_results()
 
-        print("\n=== Processo completato ===")
+        print("\n=== Processo completato ===", flush=True)
         for rcv in self.receivers:
-            print(rcv)
+            print(rcv, flush=True)
 
     def _verify_all_receivers(self):
         """Verifica connettività di tutti i ricevitori prima di iniziare"""
-        print("Verifica connettività ricevitori...")
+        print("Verifica connettività ricevitori...", flush=True)
         from utils.stream_verifier import StreamVerifier
         
         # Verify Master
         if self.master:
-             print(f"Verifica Master {self.master.serial_number}...", end=' ')
+             print(f"Verifica Master {self.master.serial_number}...", end=' ', flush=True)
              proto = StreamVerifier.detect_protocol(self.master.ip_address, self.master.port)
-             print(f"[{proto}]")
+             print(f"[{proto}]", flush=True)
              
              if proto in ['ERROR', 'TIMEOUT']:
-                 print(f"⚠️  Master {self.master.serial_number} non raggiungibile ({proto}).")
+                 print(f"⚠️  Master {self.master.serial_number} non raggiungibile ({proto}).", flush=True)
                  if not self.master.has_coordinates():
                      # Se master offline e senza coords, non possiamo procedere
                      # (In realtà potremmo se vogliamo solo processare rovers, ma servono i dati master!)
@@ -169,28 +169,28 @@ class RTKManager:
                      # Blocchiamo tutto se il master è critico.
                      return
                  else:
-                     print("⚠️  Uso coordinate Master memorizzate.")
+                     print("⚠️  Uso coordinate Master memorizzate.", flush=True)
              elif proto == 'SSH':
-                    print(f"❌ Master su porta SSH (22)? Configurazione errata.")
+                    print(f"❌ Master su porta SSH (22)? Configurazione errata.", flush=True)
                     return
         
         # Verify Rovers
         active_rovers = []
         for rover in self.rovers:
-            print(f"Verifica Rover {rover.serial_number}...", end=' ')
+            print(f"Verifica Rover {rover.serial_number}...", end=' ', flush=True)
             proto = StreamVerifier.detect_protocol(rover.ip_address, rover.port)
-            print(f"[{proto}]")
+            print(f"[{proto}]", flush=True)
             
             if proto in ['ERROR', 'TIMEOUT']:
                  print(f"⚠️  Rover {rover.serial_number} non raggiungibile ({proto}). Skippo.", flush=True)
                  continue
             
             if proto == 'SSH':
-                 print(f"❌ Rover {rover.serial_number} porta SSH rilevata. Skippo.")
+                 print(f"❌ Rover {rover.serial_number} porta SSH rilevata. Skippo.", flush=True)
                  continue
                  
             if proto == 'NMEA':
-                 print(f"⚠️  Attenzione: Rover {rover.serial_number} invia NMEA. RTKRCV richiede dati grezzi (UBX/RTCM).")
+                 print(f"⚠️  Attenzione: Rover {rover.serial_number} invia NMEA. RTKRCV richiede dati grezzi (UBX/RTCM).", flush=True)
             
             active_rovers.append(rover)
             
